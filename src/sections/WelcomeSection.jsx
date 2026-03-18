@@ -1,47 +1,77 @@
-import { motion } from 'framer-motion'
-import Stars from '../components/Stars'
+import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
+import Stars from '../components/Stars.jsx'
 
 const container = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.22 } }
+  visible: { transition: { staggerChildren: 0.2 } }
 }
-
 const item = {
-  hidden:  { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.85, ease: [0.4, 0, 0.2, 1] } }
+  hidden:  { opacity: 0, y: 28 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } }
 }
 
 export default function WelcomeSection({ sectionRef }) {
+  const innerRef = useRef(null)
+  const inView   = useInView(innerRef, { once: true, amount: 0.2 })
+
   return (
-    <section
-      ref={sectionRef}
-      id="welcome"
-      className="section welcome-section"
-    >
-      <Stars count={70} />
+    <section ref={sectionRef} id="welcome" className="section welcome-section">
+      <Stars count={75} />
 
       {/* Orbs */}
-      <div className="orb orb-blue" style={{ width: 400, height: 400, top: '-15%', left: '-10%' }} aria-hidden="true" />
-      <div className="orb orb-blue" style={{ width: 300, height: 300, bottom: '5%', right: '-8%' }} aria-hidden="true" />
+      <div className="orb orb-blue" style={{ width: 460, height: 460, top: '-18%', left: '-12%', opacity: 0.1 }} aria-hidden="true" />
+      <div className="orb orb-blue" style={{ width: 320, height: 320, bottom: '3%', right: '-10%', opacity: 0.08 }} aria-hidden="true" />
+
+      {/* Subtle horizon line */}
+      <div style={{
+        position: 'absolute', bottom: '18%', left: 0, right: 0,
+        height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(90,150,240,0.08), transparent)',
+        pointerEvents: 'none', zIndex: 0,
+      }} />
 
       <motion.div
+        ref={innerRef}
         initial="hidden"
-        animate="visible"
+        animate={inView ? 'visible' : 'hidden'}
         variants={container}
-        style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
+        style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: 540, width: '100%' }}
       >
         <motion.p variants={item} className="welcome-eyebrow">
           A letter from the heart
         </motion.p>
 
         <motion.h1 variants={item} className="t-display welcome-title">
-          Meriam Mori 
+          Meriam Mori
         </motion.h1>
 
         <motion.div variants={item} className="divider" />
 
-        <motion.p variants={item} className="t-italic welcome-subtitle">
-          إلى اختياري الأول والأخير
+        {/* Scrollable letter in glass card */}
+        <motion.div
+          variants={item}
+          className="glass-card"
+          style={{
+            padding: 'clamp(1.75rem, 5vw, 2.75rem) clamp(1.5rem, 5vw, 3rem)',
+            textAlign: 'right',
+            maxHeight: '45dvh',
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(90,150,240,0.2) transparent',
+          }}
+        >
+          <p style={{
+            fontFamily: 'var(--font-arabic)',
+            direction: 'rtl',
+            textAlign: 'right',
+            fontSize: 'clamp(1.0rem, 3vw, 1.18rem)',
+            lineHeight: 2.4,
+            color: 'var(--cream)',
+            whiteSpace: 'pre-line',
+            fontWeight: 400,
+          }}>
+            {`إلى اختياري الأول والأخير
 
 أقولها لك اليوم كما قلتها في أول لحظة جمعتنا :
 
@@ -54,9 +84,9 @@ export default function WelcomeSection({ sectionRef }) {
 قلتها مرة، وأقولها مراراً وتكراراً، وسأقولها إلى الأبد
 
 نعم لك، ونعم لحبك، ونعم لقلبك، ونعم لحياة تجمعني بك.
-<br />
+
 لماذا ؟
-<br />
+
 لأنني وجدت فيك الأمن والأمان الذي يروي خوفي
 
 والحب الذي يملأ فراغ أيامي، والصدق الذي يعيد الطمأنينة إلى قلبي.
@@ -66,17 +96,26 @@ export default function WelcomeSection({ sectionRef }) {
 بل شعور يهمس داخلي أنني مع الشخص الصحيح.
 
 فشكراً لك
-<br />
+
 شكراً لأنك كنت الإجابة على كل تساؤلاتي وشكراً لأنك كنت الحلم الذي تحقق.
 
 وسأبقى أقولها على الدوام
 
-نعم لحبك، ونعم للحياة التي أراها بين يديك وبعينيك.
-          
-          
-          <br />
-          Love U MORI❤️
-        </motion.p>
+نعم لحبك، ونعم للحياة التي أراها بين يديك وبعينيك.`}
+          </p>
+
+          <div className="divider" style={{ margin: '1.75rem auto 1.25rem' }} />
+
+          <p style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.1rem, 3vw, 1.4rem)',
+            color: 'var(--gold-light)',
+            textAlign: 'center',
+            letterSpacing: '0.07em',
+          }}>
+            Love U MORI ❤️
+          </p>
+        </motion.div>
 
         <motion.p variants={item} className="welcome-year">
           2026

@@ -1,86 +1,88 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-/* ─── Static data (computed once outside component) ─────────── */
-const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
+const STARS = Array.from({ length: 90 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: 2 + Math.random() * 3,
-  duration: 6 + Math.random() * 8,
-  delay: Math.random() * 5,
-  opacity: 0.15 + Math.random() * 0.35,
+  r: 0.4 + Math.random() * 1.6,
+  opacity: 0.15 + Math.random() * 0.6,
+  blink: 2.5 + Math.random() * 4.5,
 }))
 
-const RAIN = Array.from({ length: 18 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
   id: i,
-  x: 4 + (i / 17) * 92 + (Math.random() - 0.5) * 6,
-  delay: Math.random() * 0.8,
-  size: 14 + Math.random() * 18,
-  drift: (Math.random() - 0.5) * 40,
-  duration: 1.6 + Math.random() * 0.8,
+  x: Math.random() * 100, y: Math.random() * 100,
+  size: 1.5 + Math.random() * 2.5,
+  duration: 7 + Math.random() * 9,
+  delay: Math.random() * 6,
+  opacity: 0.1 + Math.random() * 0.28,
 }))
 
-const STARS = Array.from({ length: 80 }, (_, i) => ({
+const RAIN = Array.from({ length: 20 }, (_, i) => ({
   id: i,
-  x: Math.random() * 100,
-  y: Math.random() * 100,
-  r: 0.5 + Math.random() * 1.5,
-  opacity: 0.2 + Math.random() * 0.6,
-  blink: 2.5 + Math.random() * 4,
+  x: 4 + (i / 19) * 92 + (Math.random() - 0.5) * 5,
+  delay: Math.random() * 0.9,
+  size: 12 + Math.random() * 20,
+  drift: (Math.random() - 0.5) * 50,
+  duration: 1.5 + Math.random() * 1,
 }))
 
-/* ═══════════════════════════════════════════════════════════════ */
 export default function IntroGate({ onEnterComplete }) {
-  const [phase, setPhase] = useState('idle')   // idle | hearts | fade
-  const [heartsDone, setHeartsDone] = useState(false)
-  const hasTriggered = useRef(false)
+  const [phase, setPhase]       = useState('idle')
+  const [heartsDone, setDone]   = useState(false)
+  const triggered               = useRef(false)
 
   useEffect(() => {
-    if (heartsDone) {
-      const t = setTimeout(() => setPhase('fade'), 200)
-      return () => clearTimeout(t)
-    }
+    if (!heartsDone) return
+    const t = setTimeout(() => setPhase('fade'), 180)
+    return () => clearTimeout(t)
   }, [heartsDone])
 
   useEffect(() => {
-    if (phase === 'fade') {
-      const t = setTimeout(() => onEnterComplete(), 900)
-      return () => clearTimeout(t)
-    }
+    if (phase !== 'fade') return
+    const t = setTimeout(() => onEnterComplete(), 850)
+    return () => clearTimeout(t)
   }, [phase, onEnterComplete])
 
   const handleTap = useCallback(() => {
-    if (hasTriggered.current) return
-    hasTriggered.current = true
+    if (triggered.current) return
+    triggered.current = true
     setPhase('hearts')
-    setTimeout(() => setHeartsDone(true), 2000)
+    setTimeout(() => setDone(true), 2100)
   }, [])
 
   return (
     <AnimatePresence>
       {phase !== 'fade' && (
         <motion.div
-          key="intro"
+          key="intro-gate"
+          style={S.root}
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.9, ease: 'easeInOut' }}
-          style={styles.root}
+          transition={{ duration: 0.85, ease: 'easeInOut' }}
           onPointerDown={handleTap}
         >
-          {/* Sky gradient */}
-          <div style={styles.gradientBg} />
+          {/* Deep space gradient */}
+          <div style={S.bg} />
 
-          {/* Stars SVG */}
-          <svg style={styles.starsSvg} viewBox="0 0 100 100" preserveAspectRatio="none">
+          {/* Radial center glow */}
+          <motion.div
+            style={S.centerGlow}
+            animate={{ opacity: [0.3, 0.55, 0.3], scale: [1, 1.06, 1] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+
+          {/* Stars */}
+          <svg style={S.starSvg} viewBox="0 0 100 100" preserveAspectRatio="none">
             {STARS.map(s => (
               <motion.circle
                 key={s.id}
                 cx={s.x} cy={s.y} r={s.r}
                 fill="white"
                 initial={{ opacity: s.opacity }}
-                animate={{ opacity: [s.opacity, s.opacity * 0.2, s.opacity] }}
-                transition={{ duration: s.blink, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 3 }}
+                animate={{ opacity: [s.opacity, s.opacity * 0.15, s.opacity] }}
+                transition={{ duration: s.blink, repeat: Infinity, ease: 'easeInOut', delay: Math.random() * 4 }}
               />
             ))}
           </svg>
@@ -90,132 +92,140 @@ export default function IntroGate({ onEnterComplete }) {
             <motion.div
               key={p.id}
               style={{
-                ...styles.particle,
+                ...S.particle,
                 left: `${p.x}%`, top: `${p.y}%`,
                 width: p.size, height: p.size, opacity: p.opacity,
               }}
-              animate={{ y: [0, -22, 0], opacity: [p.opacity, p.opacity * 1.6, p.opacity] }}
+              animate={{ y: [0, -20, 0], opacity: [p.opacity, p.opacity * 1.8, p.opacity] }}
               transition={{ duration: p.duration, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}
             />
           ))}
 
-          {/* Heart rain on tap */}
+          {/* Heart rain */}
           <AnimatePresence>
             {phase === 'hearts' && RAIN.map(h => (
               <motion.div
                 key={h.id}
-                initial={{ opacity: 0.9, y: -40, x: 0, scale: 0.4 }}
+                style={{ ...S.rainHeart, left: `${h.x}%`, fontSize: h.size }}
+                initial={{ opacity: 0.85, y: -30, x: 0, scale: 0.35 }}
                 animate={{
                   opacity: 0,
-                  y: typeof window !== 'undefined' ? window.innerHeight + 60 : 900,
+                  y: typeof window !== 'undefined' ? window.innerHeight + 80 : 900,
                   x: h.drift,
-                  scale: [0.4, 1.1, 0.9],
+                  scale: [0.35, 1.05, 0.9],
                 }}
                 transition={{ duration: h.duration, delay: h.delay, ease: [0.25, 0.46, 0.45, 0.94] }}
-                style={{ ...styles.rainHeart, left: `${h.x}%`, fontSize: h.size }}
               >
                 💙
               </motion.div>
             ))}
           </AnimatePresence>
 
-          {/* Center card */}
+          {/* Card */}
           <motion.div
-            style={styles.card}
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            style={S.cardOuter}
+            initial={{ opacity: 0, y: 28, scale: 0.95 }}
             animate={
               phase === 'hearts'
-                ? { opacity: 1, y: 0, scale: 1.03, filter: 'drop-shadow(0 0 32px #4fa3e088)' }
+                ? { opacity: 1, y: 0, scale: 1.025 }
                 : { opacity: 1, y: 0, scale: 1 }
             }
-            transition={{ duration: 1.1, ease: 'easeOut' }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
           >
-            {/* Shimmer border */}
+            {/* Animated shimmer border */}
             <motion.div
-              style={styles.shimmerBorder}
+              style={S.shimmer}
               animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: 'linear' }}
             />
 
-            <div style={styles.cardInner}>
-              {/* Moon icon */}
+            <div style={S.cardInner}>
+              {/* Moon */}
               <motion.div
-                style={styles.moonIcon}
-                animate={{ scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                style={S.moon}
+                animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
               >
                 🌙
               </motion.div>
 
-              {/* ✨ NEW — Arabic romantic phrase */}
+              {/* Arabic phrase */}
               <motion.p
-                style={styles.arabicPhrase}
+                style={S.arabicPhrase}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 1.0 }}
+                transition={{ delay: 0.3, duration: 1.1 }}
               >
                 <motion.span
-                  animate={{ textShadow: [
-                    '0 0 18px #4fa3e055',
-                    '0 0 32px #7ec8f099',
-                    '0 0 18px #4fa3e055',
-                  ]}}
-                  transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={{
+                    textShadow: [
+                      '0 0 20px rgba(79,163,224,0.45)',
+                      '0 0 38px rgba(126,200,240,0.7)',
+                      '0 0 20px rgba(79,163,224,0.45)',
+                    ]
+                  }}
+                  transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   بِحُبِّكِ يا مَرْيَم
                 </motion.span>
               </motion.p>
 
-              {/* Divider */}
+              {/* Thin divider */}
               <motion.div
-                style={styles.dividerThin}
+                style={S.thinDivider}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
-                transition={{ delay: 0.6, duration: 0.8 }}
+                transition={{ delay: 0.65, duration: 0.9 }}
               />
 
               {/* Title */}
               <motion.h1
-                style={styles.title}
-                initial={{ opacity: 0, y: 10 }}
+                style={S.title}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7, duration: 0.9 }}
+                transition={{ delay: 0.75, duration: 0.9 }}
               >
                 Happy Birthday, Meriam
-                <span style={styles.titleHeart}> 💙</span>
+                <motion.span
+                  style={{ display: 'inline-block', marginLeft: '0.2em' }}
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                >
+                  💙
+                </motion.span>
               </motion.h1>
 
               {/* Divider */}
               <motion.div
-                style={styles.divider}
+                style={S.divider}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
-                transition={{ delay: 1.0, duration: 0.8 }}
+                transition={{ delay: 1.05, duration: 0.9 }}
               />
 
               {/* Subtitle */}
               <motion.p
-                style={styles.subtitle}
+                style={S.subtitle}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 1.2, duration: 0.9 }}
+                transition={{ delay: 1.25, duration: 0.9 }}
               >
                 A little moment… before the magic begins
               </motion.p>
 
-              {/* CTA Button */}
+              {/* CTA */}
               <motion.button
-                style={styles.button}
-                initial={{ opacity: 0, y: 8 }}
+                style={S.btn}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.5, duration: 0.8 }}
-                whileHover={{ scale: 1.05, boxShadow: '0 0 28px #4fa3e066' }}
-                whileTap={{ scale: 0.97 }}
-                onPointerDown={(e) => { e.stopPropagation(); handleTap() }}
+                transition={{ delay: 1.55, duration: 0.8 }}
+                whileHover={{ scale: 1.06, boxShadow: '0 0 32px rgba(79,163,224,0.5)' }}
+                whileTap={{ scale: 0.96 }}
+                onPointerDown={e => { e.stopPropagation(); handleTap() }}
               >
                 <motion.span
-                  animate={{ opacity: [1, 0.7, 1] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
+                  animate={{ opacity: [1, 0.65, 1] }}
+                  transition={{ duration: 2.8, repeat: Infinity }}
                 >
                   Tap to Begin 💙
                 </motion.span>
@@ -224,118 +234,123 @@ export default function IntroGate({ onEnterComplete }) {
           </motion.div>
 
           {/* Vignette */}
-          <div style={styles.vignette} />
+          <div style={S.vignette} />
         </motion.div>
       )}
     </AnimatePresence>
   )
 }
 
-/* ─── Styles ─────────────────────────────────────────────────── */
-const styles = {
+const S = {
   root: {
     position: 'fixed', inset: 0, zIndex: 9999,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', cursor: 'pointer',
     userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation',
   },
-  gradientBg: {
+  bg: {
     position: 'absolute', inset: 0,
     background: `
-      radial-gradient(ellipse 80% 60% at 30% 20%, #0d1f4a 0%, transparent 70%),
-      radial-gradient(ellipse 70% 50% at 70% 80%, #0a1930 0%, transparent 60%),
-      linear-gradient(160deg, #070e22 0%, #0c1836 40%, #071325 80%, #050c1e 100%)
+      radial-gradient(ellipse 80% 55% at 30% 22%, #0c1f4a 0%, transparent 70%),
+      radial-gradient(ellipse 70% 50% at 72% 78%, #09162e 0%, transparent 62%),
+      linear-gradient(160deg, #06101e 0%, #0b1830 38%, #061120 78%, #040c1c 100%)
     `,
   },
-  starsSvg: { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' },
+  centerGlow: {
+    position: 'absolute',
+    width: '60vmax', height: '60vmax',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(30,70,180,0.14) 0%, transparent 70%)',
+    top: '50%', left: '50%',
+    transform: 'translate(-50%,-50%)',
+    pointerEvents: 'none',
+  },
+  starSvg: { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' },
   particle: {
     position: 'absolute', borderRadius: '50%',
-    background: 'radial-gradient(circle, #7eb8e8 0%, #4fa3e0 60%, transparent 100%)',
+    background: 'radial-gradient(circle, #7ec8e8 0%, #4a95d0 55%, transparent 100%)',
     pointerEvents: 'none', filter: 'blur(1px)',
   },
   rainHeart: {
     position: 'fixed', top: 0, pointerEvents: 'none', zIndex: 10000,
-    lineHeight: 1, filter: 'drop-shadow(0 0 6px #4fa3e099)',
+    lineHeight: 1, filter: 'drop-shadow(0 0 7px rgba(79,163,224,0.7))',
   },
-  card: {
-    position: 'relative', width: 'min(90vw, 420px)',
-    borderRadius: 28, padding: 2, background: 'transparent', zIndex: 10,
+  cardOuter: {
+    position: 'relative', width: 'min(90vw, 410px)',
+    borderRadius: 26, padding: 2.5,
+    background: 'transparent', zIndex: 10,
   },
-  shimmerBorder: {
-    position: 'absolute', inset: 0, borderRadius: 28, padding: 1.5,
-    background: 'linear-gradient(135deg, #4fa3e0 0%, #1a3a6b 30%, #7ec8f0 60%, #1a3a6b 80%, #4fa3e0 100%)',
+  shimmer: {
+    position: 'absolute', inset: 0, borderRadius: 26, padding: 1.5,
+    background: 'linear-gradient(135deg, #4fa3e0 0%, #1a3a6b 28%, #7ec8f0 58%, #1a3a6b 78%, #4fa3e0 100%)',
     backgroundSize: '200% 200%',
     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
     WebkitMaskComposite: 'destination-out', maskComposite: 'exclude',
     pointerEvents: 'none',
   },
   cardInner: {
-    background: 'rgba(8, 20, 50, 0.78)',
-    backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-    borderRadius: 26, padding: 'clamp(28px, 6vw, 44px) clamp(24px, 6vw, 36px)',
+    background: 'rgba(6, 16, 46, 0.82)',
+    backdropFilter: 'blur(26px)', WebkitBackdropFilter: 'blur(26px)',
+    borderRadius: 23.5,
+    padding: 'clamp(28px, 7vw, 46px) clamp(24px, 7vw, 38px)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
   },
-  moonIcon: {
-    fontSize: 36, marginBottom: 18,
-    filter: 'drop-shadow(0 0 12px #4fa3e055)', lineHeight: 1,
-  },
-
-  /* ✨ NEW Arabic phrase style */
+  moon: { fontSize: 34, marginBottom: 18, lineHeight: 1, filter: 'drop-shadow(0 0 14px rgba(79,163,224,0.5))' },
   arabicPhrase: {
     margin: 0,
     fontFamily: `'Scheherazade New', 'Arial', serif`,
     direction: 'rtl',
-    fontSize: 'clamp(1.55rem, 5.5vw, 2rem)',
+    fontSize: 'clamp(1.5rem, 5.5vw, 1.95rem)',
     fontWeight: 600,
-    color: '#b8dcf8',
+    color: '#b4d8f5',
     textAlign: 'center',
-    letterSpacing: '0.04em',
+    letterSpacing: '0.03em',
     lineHeight: 1.4,
-    textShadow: '0 0 24px #4fa3e066',
     marginBottom: 6,
   },
-
-  dividerThin: {
-    width: 40, height: 1,
-    background: 'linear-gradient(90deg, transparent, #4fa3e066, transparent)',
-    margin: '14px 0 16px', transformOrigin: 'center',
+  thinDivider: {
+    width: 38, height: 1,
+    background: 'linear-gradient(90deg, transparent, rgba(79,163,224,0.55), transparent)',
+    margin: '13px 0 15px', transformOrigin: 'center',
   },
   title: {
     margin: 0,
-    fontSize: 'clamp(1.1rem, 4vw, 1.5rem)',
-    fontWeight: 600,
-    color: '#d8ecff',
-    textAlign: 'center',
-    letterSpacing: '0.02em',
-    lineHeight: 1.3,
-    fontFamily: `'Georgia', 'Times New Roman', serif`,
-    textShadow: '0 0 24px #4fa3e044',
+    fontSize: 'clamp(1.05rem, 4vw, 1.45rem)',
+    fontWeight: 600, color: '#d5eaff',
+    textAlign: 'center', letterSpacing: '0.02em', lineHeight: 1.3,
+    fontFamily: `'Cormorant Garamond', Georgia, serif`,
+    textShadow: '0 0 28px rgba(79,163,224,0.35)',
   },
-  titleHeart: { display: 'inline-block', filter: 'drop-shadow(0 0 8px #4fa3e0)' },
   divider: {
-    width: 52, height: 1.5,
-    background: 'linear-gradient(90deg, transparent, #4fa3e088, transparent)',
-    borderRadius: 2, margin: '16px 0 13px', transformOrigin: 'center',
+    width: 50, height: 1.5,
+    background: 'linear-gradient(90deg, transparent, rgba(79,163,224,0.75), transparent)',
+    borderRadius: 2, margin: '15px 0 12px', transformOrigin: 'center',
   },
   subtitle: {
     margin: 0,
-    fontSize: 'clamp(0.75rem, 2.4vw, 0.9rem)',
-    color: '#8ab8d8', textAlign: 'center',
-    letterSpacing: '0.06em', fontStyle: 'italic',
-    lineHeight: 1.6, fontFamily: `'Georgia', serif`, maxWidth: 260,
+    fontSize: 'clamp(0.73rem, 2.3vw, 0.87rem)',
+    color: '#7aa8c8', textAlign: 'center', letterSpacing: '0.07em',
+    fontStyle: 'italic', lineHeight: 1.65,
+    fontFamily: `'Cormorant Garamond', Georgia, serif`,
+    maxWidth: 250,
   },
-  button: {
-    marginTop: 28, padding: '13px 34px', borderRadius: 50,
-    border: '1.5px solid #4fa3e055',
-    background: 'linear-gradient(135deg, rgba(79,163,224,0.18) 0%, rgba(30,80,150,0.25) 100%)',
-    color: '#c8e6ff', fontSize: '0.93rem', fontWeight: 600,
-    letterSpacing: '0.08em', cursor: 'pointer',
-    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-    fontFamily: `'Georgia', serif`, WebkitTapHighlightColor: 'transparent',
+  btn: {
+    marginTop: 26, padding: 'clamp(11px,3vw,14px) clamp(28px,6vw,36px)',
+    borderRadius: 999,
+    border: '1.5px solid rgba(79,163,224,0.45)',
+    background: 'linear-gradient(135deg, rgba(79,163,224,0.16) 0%, rgba(28,72,145,0.24) 100%)',
+    color: '#c4e0f8',
+    fontSize: 'clamp(0.82rem,2.5vw,0.92rem)',
+    fontWeight: 600, letterSpacing: '0.08em',
+    cursor: 'pointer',
+    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    fontFamily: `'Cormorant Garamond', Georgia, serif`,
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'border-color 0.3s',
   },
   vignette: {
     position: 'absolute', inset: 0,
-    background: 'radial-gradient(ellipse 90% 90% at 50% 50%, transparent 40%, rgba(3,8,20,0.65) 100%)',
+    background: 'radial-gradient(ellipse 88% 88% at 50% 50%, transparent 38%, rgba(2,6,18,0.68) 100%)',
     pointerEvents: 'none',
   },
 }
