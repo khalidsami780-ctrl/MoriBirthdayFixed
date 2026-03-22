@@ -129,13 +129,15 @@ export default function PdfSection({ sectionRef }) {
             </motion.div>
 
             {/* Arabic title */}
+
+            <motion.h2 variants={item} style={S.title}>
+              اولا : نصيحة تابعي دورات الشيخ علاء حامد باليوتيوب 
+            </motion.h2>
             <motion.h2 variants={item} style={S.title}>
               شيء أخفيته لكِ… حتى الآن
             </motion.h2>
 
-            <motion.h2 variants={item} style={S.title}>
-              نصيحة تابعي دورات الشيخ علاء حامد باليوتيوب
-            </motion.h2>
+            
             
             {/* Gold divider */}
             <motion.div
