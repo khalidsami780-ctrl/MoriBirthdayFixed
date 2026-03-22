@@ -133,6 +133,10 @@ export default function PdfSection({ sectionRef }) {
               شيء أخفيته لكِ… حتى الآن
             </motion.h2>
 
+            <motion.h2 variants={item} style={S.title}>
+              نصيحة تابعي دورات الشيخ علاء حامد باليوتيوب
+            </motion.h2>
+            
             {/* Gold divider */}
             <motion.div
               style={S.divider}
