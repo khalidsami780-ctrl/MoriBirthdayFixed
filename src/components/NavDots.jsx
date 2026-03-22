@@ -1,4 +1,7 @@
-const SECTIONS = ['welcome','birthday','message','poetry','koko','dua','music','gift']
+const SECTIONS = [
+  'pdf-gift', 'welcome', 'birthday', 'message',
+  'poetry',   'koko',    'dua',      'music', 'gift'
+]
 
 export default function NavDots({ active, scrollTo }) {
   return (
@@ -8,9 +11,10 @@ export default function NavDots({ active, scrollTo }) {
           key={id}
           className={[
             'nav-dot',
-            active === i   ? 'active'       : '',
-            id === 'music' ? 'nav-dot--music': '',
-            id === 'gift'  ? 'nav-dot--gift' : '',
+            active === i      ? 'active'         : '',
+            id === 'music'    ? 'nav-dot--music' : '',
+            id === 'gift'     ? 'nav-dot--gift'  : '',
+            id === 'pdf-gift' ? 'nav-dot--pdf'   : '',
           ].filter(Boolean).join(' ')}
           onClick={() => scrollTo(i)}
           aria-label={`Go to ${id}`}

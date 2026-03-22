@@ -4,6 +4,7 @@ import NavDots         from '../components/NavDots.jsx'
 import IntroGate       from '../components/IntroGate.jsx'
 import MusicButton     from '../components/MusicButton.jsx'
 import WorldSwitcher   from '../shared/WorldSwitcher.jsx'
+import PdfSection      from '../sections/PdfSection.jsx'
 import WelcomeSection  from '../sections/WelcomeSection.jsx'
 import BirthdaySection from '../sections/BirthdaySection.jsx'
 import MessageSection  from '../sections/MessageSection.jsx'
@@ -13,7 +14,7 @@ import DuaSection      from '../sections/DuaSection.jsx'
 import MusicSection    from '../sections/MusicSection.jsx'
 import GiftSection     from '../sections/GiftSection.jsx'
 
-const SECTION_COUNT = 8
+const SECTION_COUNT = 9
 
 export default function BirthdayPage() {
   const scrollContainerRef = useRef(null)
@@ -56,14 +57,12 @@ export default function BirthdayPage() {
       transition={{ duration: 0.5 }}
       style={{ width: '100%', height: '100%', position: 'relative' }}
     >
-      {/* Intro gate — shown only once */}
       <AnimatePresence>
         {!isIntroDone && (
           <IntroGate key="intro" onEnterComplete={handleEnterComplete} />
         )}
       </AnimatePresence>
 
-      {/* Main content revealed after intro */}
       <AnimatePresence>
         {isIntroDone && (
           <motion.div
@@ -74,25 +73,21 @@ export default function BirthdayPage() {
             style={{ position: 'relative', width: '100%', height: '100%' }}
           >
             <div className="noise-overlay" aria-hidden="true" />
-
-            {/* World Switcher — top center */}
             <WorldSwitcher />
-
-            {/* Floating music button — bottom left */}
             <MusicButton />
-
-            {/* Right-side section dots */}
             <NavDots active={activeSection} scrollTo={scrollTo} />
 
             <main ref={scrollContainerRef} className="scroll-container" role="main">
-              <WelcomeSection  sectionRef={setRef(0)} />
-              <BirthdaySection sectionRef={setRef(1)} />
-              <MessageSection  sectionRef={setRef(2)} />
-              <PoetrySection   sectionRef={setRef(3)} />
-              <KokoSection     sectionRef={setRef(4)} />
-              <DuaSection      sectionRef={setRef(5)} />
-              <MusicSection    sectionRef={setRef(6)} />
-              <GiftSection     sectionRef={setRef(7)} />
+              {/* ✅ PDF surprise is now the FIRST section */}
+              <PdfSection      sectionRef={setRef(0)} />
+              <WelcomeSection  sectionRef={setRef(1)} />
+              <BirthdaySection sectionRef={setRef(2)} />
+              <MessageSection  sectionRef={setRef(3)} />
+              <PoetrySection   sectionRef={setRef(4)} />
+              <KokoSection     sectionRef={setRef(5)} />
+              <DuaSection      sectionRef={setRef(6)} />
+              <MusicSection    sectionRef={setRef(7)} />
+              <GiftSection     sectionRef={setRef(8)} />
             </main>
           </motion.div>
         )}

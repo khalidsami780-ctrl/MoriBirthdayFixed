@@ -404,3 +404,29 @@ body {
 ::selection { background: rgba(58,123,213,0.32); color: var(--cream); }
 :focus-visible { outline: 2px solid var(--blue-400); outline-offset: 3px; border-radius: 4px; }
 button:focus:not(:focus-visible) { outline: none; }
+
+
+/* ─── Add these rules to the END of your index.css ─────────── */
+
+/* PDF Surprise section */
+.pdf-section {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(20, 55, 140, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 55% at 15% 80%, rgba(58, 123, 213, 0.10) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 85% 85%, rgba(201, 168, 76, 0.05) 0%, transparent 55%),
+    var(--bg-deep);
+  padding: clamp(3rem, 10vh, 5rem) clamp(1.25rem, 5vw, 2rem);
+  justify-content: center;
+  text-align: center;
+}
+
+/* PDF nav dot — soft gold/blue gradient */
+.nav-dot--pdf.active {
+  background: linear-gradient(135deg, #5b9cf6, #e8c97e);
+  box-shadow: 0 0 0 2.5px rgba(91,156,246,0.18), 0 0 14px rgba(91,156,246,0.55);
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .pdf-section { padding-left: 1rem; padding-right: 1rem; }
+}
