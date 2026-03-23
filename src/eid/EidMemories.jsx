@@ -9,6 +9,7 @@ import photo3 from '../assets/memories/photo3.jpg'
 import photo4 from '../assets/memories/photo4.jpg'
 import photo6 from '../assets/memories/photo6.jpg'
 import Vid    from '../assets/memories/Vid.mp4'
+import MyPhoneWallpaper from '../assets/memories/MyPhoneWallpaper.jpg'
 
 const MEMORIES = [
   { id: 1, type: 'image', src: photo1, caption: 'You felt like home' },
@@ -17,6 +18,7 @@ const MEMORIES = [
   { id: 4, type: 'image', src: photo4, caption: 'Even the trees listened… when I wrote about you_Always in my heart. 💙' },
   { id: 5, type: 'image', src: photo6, caption: 'This is how my heart looks… whenever you’re near' },
   { id: 6, type: 'video', src: Vid,    caption: 'If I could relive one feeling forever… it would be loving you_I Love U, Mori 💙' },
+  { id: 7, type: 'image', src: MyPhoneWallpaper, caption: 'انتي موجودة فى كل لحظة في يومي'},
 ]
 
 /* ═══════════════════════════════════════════════════════════════
