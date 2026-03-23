@@ -430,3 +430,26 @@ button:focus:not(:focus-visible) { outline: none; }
 @media (max-width: 480px) {
   .pdf-section { padding-left: 1rem; padding-right: 1rem; }
 }
+
+/* Messages page scrollbar hide */
+.messages-scroll::-webkit-scrollbar { display: none; }
+ 
+/* Advice link hover */
+a[style*="border: 1px solid rgba(91,156,246"]:hover {
+  background: rgba(91,156,246,0.15) !important;
+  border-color: rgba(91,156,246,0.5) !important;
+  color: rgba(200,228,255,0.95) !important;
+}
+ 
+/* Advice card hover — show top glow line stronger */
+.advice-card:hover { border-color: rgba(91,156,246,0.32) !important; }
+ 
+/* Advice link hover */
+a[style*="border: 1px solid rgba(91,156,246"]:hover {
+  background: rgba(91,156,246,0.15) !important;
+  border-color: rgba(91,156,246,0.5) !important;
+  color: rgba(200,228,255,0.95) !important;
+}
+ 
+/* Advice card hover */
+.advice-card:hover { border-color: rgba(91,156,246,0.32) !important; }
