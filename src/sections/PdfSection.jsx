@@ -131,7 +131,7 @@ export default function PdfSection({ sectionRef }) {
             {/* Arabic title */}
 
             <motion.h2 variants={item} style={S.title}>
-              اولا : نصيحة تابعي دورات الشيخ علاء حامد باليوتيوب 
+              اولا : نصيحة تابعي دورات الشيخ علاء حامد باليوتيوب \n اوعي تنسي "الاستخارة قبل كل أمر"
             </motion.h2>
             <motion.h2 variants={item} style={S.title}>
               شيء أخفيته لكِ… حتى الآن
@@ -149,6 +149,9 @@ export default function PdfSection({ sectionRef }) {
             />
 
             {/* Description */}
+            <motion.p variants={item} style={S.desc}>
+              {`استخيري الله فى كل أموركحتى أمرنا \n هيرضينا و الله هيرضينا ذي ما رضيناه🥺`}
+            </motion.p>
             <motion.p variants={item} style={S.desc}>
               {'هذه ليست مجرد كلمات…\nبل شيء كُتب من قلبي،\nليُقرأ حين تكونين مستعدة…'}
             </motion.p>
