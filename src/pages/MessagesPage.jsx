@@ -6,6 +6,59 @@ import { messagePosts } from '../data/messagePosts.js'
 import { advicePosts }  from '../data/advicePosts.js'
 
 /* ═══════════════════════════════════════════════════════════════
+   MEDIA BLOCK
+   Renders an image or video from a Cloudinary (or any) URL.
+   Returns null if mediaUrl is empty — fully optional.
+═══════════════════════════════════════════════════════════════ */
+function MediaBlock({ mediaUrl, mediaType }) {
+  if (!mediaUrl) return null
+
+  return (
+    <motion.div
+      style={MB.wrap}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {mediaType === 'video' ? (
+        <video
+          src={mediaUrl}
+          controls
+          playsInline
+          preload="metadata"
+          style={MB.media}
+        />
+      ) : (
+        <motion.img
+          src={mediaUrl}
+          alt=""
+          loading="lazy"
+          style={MB.media}
+          whileHover={{ scale: 1.025 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+    </motion.div>
+  )
+}
+
+const MB = {
+  wrap: {
+    marginTop: '1.5rem',
+    borderRadius: 16,
+    overflow: 'hidden',
+    boxShadow: '0 8px 36px rgba(0,0,0,0.55), 0 0 0 1px rgba(91,156,246,0.12)',
+    background: '#000',
+  },
+  media: {
+    width: '100%',
+    display: 'block',
+    borderRadius: 16,
+    objectFit: 'cover',
+  },
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
 ═══════════════════════════════════════════════════════════════ */
 const fadeUp = {
@@ -18,7 +71,7 @@ const stagger = {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SHARED SECTION HEADER
+   SECTION HEADER
 ═══════════════════════════════════════════════════════════════ */
 function SectionHeader({ eyebrow, title }) {
   const ref    = useRef(null)
@@ -66,12 +119,11 @@ const SH = {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MESSAGE CARD  — same pattern as AdviceCard
-   Just add objects to src/data/messagePosts.js to add more
+   MESSAGE CARD
 ═══════════════════════════════════════════════════════════════ */
 const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
   const ref    = useRef(null)
-  const inView = useInView(ref, { once: true, amount: 0.08 })
+  const inView = useInView(ref, { once: true, amount: 0.06 })
 
   return (
     <motion.article
@@ -86,29 +138,23 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
         borderColor: 'rgba(91,156,246,0.3)',
       }}
     >
-      {/* Shimmer top edge */}
       <div style={MC.topLine} />
 
-      {/* Date */}
       <time style={MC.date}>
         {new Date(post.date).toLocaleDateString('ar-EG', {
           year: 'numeric', month: 'long', day: 'numeric',
         })}
       </time>
 
-      {/* Title */}
       <h3 style={MC.title}>{post.title}</h3>
-
-      {/* Divider */}
       <div style={MC.divider} />
-
-      {/* Quote icon */}
       <div style={MC.quoteIcon}>❝</div>
 
-      {/* Content */}
       <p style={MC.content}>{post.content}</p>
 
-      {/* Subtle note at bottom — same for every message */}
+      {/* ── Media (image or video from Cloudinary) ── */}
+      <MediaBlock mediaUrl={post.mediaUrl} mediaType={post.mediaType} />
+
       <div style={MC.footerDivider} />
       <p style={MC.note}>
         {`سيظل هذا المكان موجودًا…\nلمن أراد أن يعود يومًا ويقرأ بهدوء`}
@@ -144,8 +190,7 @@ const MC = {
     fontFamily: `'Scheherazade New','Arial',serif`,
     direction: 'rtl', textAlign: 'right',
     fontSize: 'clamp(1.15rem,3.5vw,1.45rem)', fontWeight: 700,
-    color: 'rgba(200,228,255,0.9)', lineHeight: 1.5,
-    margin: '0 0 0.5rem',
+    color: 'rgba(200,228,255,0.9)', lineHeight: 1.5, margin: '0 0 0.5rem',
   },
   divider: {
     width: 44, height: 1,
@@ -174,8 +219,8 @@ const MC = {
   note: {
     fontFamily: `'Scheherazade New','Arial',serif`,
     direction: 'rtl', textAlign: 'center',
-    fontSize: 'clamp(0.88rem,2.4vw,1rem)',
-    lineHeight: 1.9, color: 'rgba(168,200,248,0.38)',
+    fontSize: 'clamp(0.88rem,2.4vw,1rem)', lineHeight: 1.9,
+    color: 'rgba(168,200,248,0.38)',
     fontStyle: 'italic', whiteSpace: 'pre-line', margin: 0,
   },
 }
@@ -185,7 +230,7 @@ const MC = {
 ═══════════════════════════════════════════════════════════════ */
 const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
-  const inView = useInView(ref, { once: true, amount: 0.1 })
+  const inView = useInView(ref, { once: true, amount: 0.08 })
 
   return (
     <motion.article
@@ -201,14 +246,21 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       }}
     >
       <div style={AC.topLine} />
+
       <time style={AC.date}>
         {new Date(post.date).toLocaleDateString('ar-EG', {
           year: 'numeric', month: 'long', day: 'numeric',
         })}
       </time>
+
       <h3 style={AC.title}>{post.title}</h3>
       <div style={AC.divider} />
+
       <p style={AC.content}>{post.content}</p>
+
+      {/* ── Media (image or video from Cloudinary) ── */}
+      <MediaBlock mediaUrl={post.mediaUrl} mediaType={post.mediaType} />
+
       {post.link && (
         <a href={post.link} target="_blank" rel="noopener noreferrer" style={AC.link}>
           <span>{post.linkLabel || 'اقرأ أكثر'}</span>
@@ -251,8 +303,7 @@ const AC = {
     fontFamily: `'Scheherazade New','Arial',serif`,
     direction: 'rtl', textAlign: 'right',
     fontSize: 'clamp(1.05rem,3vw,1.3rem)', fontWeight: 600,
-    color: 'rgba(200,228,255,0.92)', lineHeight: 1.5,
-    margin: '0 0 0.5rem',
+    color: 'rgba(200,228,255,0.92)', lineHeight: 1.5, margin: '0 0 0.5rem',
   },
   divider: {
     width: 40, height: 1,
@@ -306,7 +357,7 @@ const TN = {
     display: 'flex', background: 'rgba(4,10,34,0.82)',
     backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
     border: '1px solid rgba(91,156,246,0.22)',
-    borderRadius: 999, padding: 3, gap: 0,
+    borderRadius: 999, padding: 3,
     boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
     marginBottom: 'clamp(2rem,5vw,3rem)',
   },
@@ -317,8 +368,7 @@ const TN = {
     cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent',
     fontFamily: `'Scheherazade New','Arial',serif`,
     fontWeight: 600, fontSize: 'clamp(0.95rem,2.5vw,1.15rem)',
-    letterSpacing: '0.04em', direction: 'rtl',
-    transition: 'color 0.3s',
+    letterSpacing: '0.04em', direction: 'rtl', transition: 'color 0.3s',
   },
   bg: {
     position: 'absolute', inset: 0, borderRadius: 996,
@@ -328,63 +378,38 @@ const TN = {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MESSAGES SECTION
+   SECTION WRAPPERS
 ═══════════════════════════════════════════════════════════════ */
 function MessagesSection() {
   const sorted = [...messagePosts].sort((a, b) => new Date(b.date) - new Date(a.date))
-
   return (
     <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
       <SectionHeader eyebrow="كلمات من القلب" title="الرسائل" />
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.35, duration: 0.8 }}
-        style={SEC.hint}
-      >
+      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
+        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
         ستُضاف رسائل جديدة من حين لآخر…
       </motion.p>
-
       <div style={SEC.list}>
         {sorted.map((post, i) => (
-          <MessageCard
-            key={post.id}
-            post={post}
-            delay={Math.min(i * 0.07, 0.28)}
-          />
+          <MessageCard key={post.id} post={post} delay={Math.min(i * 0.07, 0.28)} />
         ))}
       </div>
     </div>
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ADVICE SECTION
-═══════════════════════════════════════════════════════════════ */
 function AdviceSection() {
   const sorted = [...advicePosts].sort((a, b) => new Date(b.date) - new Date(a.date))
-
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
       <SectionHeader eyebrow="نصائح… ل موري" title="النصائح" />
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.35, duration: 0.8 }}
-        style={SEC.hint}
-      >
+      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
+        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
         ستُضاف كلمات جديدة من حين لآخر… لمن يهمه أن يقرأ
       </motion.p>
-
       <div style={SEC.list}>
         {sorted.map((post, i) => (
-          <AdviceCard
-            key={post.id}
-            post={post}
-            delay={Math.min(i * 0.06, 0.3)}
-          />
+          <AdviceCard key={post.id} post={post} delay={Math.min(i * 0.06, 0.3)} />
         ))}
       </div>
     </div>
@@ -396,14 +421,10 @@ const SEC = {
     fontFamily: `'Scheherazade New','Arial',serif`,
     direction: 'rtl', textAlign: 'center',
     fontSize: 'clamp(0.88rem,2.4vw,1rem)',
-    color: 'rgba(168,200,248,0.38)',
-    fontStyle: 'italic', letterSpacing: '0.04em',
-    marginBottom: 'clamp(1.5rem,4vw,2.5rem)',
+    color: 'rgba(168,200,248,0.38)', fontStyle: 'italic',
+    letterSpacing: '0.04em', marginBottom: 'clamp(1.5rem,4vw,2.5rem)',
   },
-  list: {
-    display: 'flex', flexDirection: 'column',
-    gap: 'clamp(0.85rem,2.5vw,1.35rem)',
-  },
+  list: { display: 'flex', flexDirection: 'column', gap: 'clamp(0.85rem,2.5vw,1.35rem)' },
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -415,16 +436,12 @@ export default function MessagesPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{ width: '100%', minHeight: '100dvh', position: 'relative', background: 'var(--bg-deep)' }}
+      initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+      transition={{ duration:0.5 }}
+      style={{ width:'100%', minHeight:'100dvh', position:'relative', background:'var(--bg-deep)' }}
     >
       <div className="noise-overlay" aria-hidden="true" />
       <Stars count={50} />
-
-      {/* Ambient orbs */}
       <div className="orb orb-blue"
         style={{ position:'fixed', width:500, height:500, top:'-5%', left:'-10%', opacity:0.07, zIndex:0 }}
         aria-hidden="true" />
@@ -436,45 +453,33 @@ export default function MessagesPage() {
 
       <div style={MP.scroll}>
         <div style={MP.inner}>
-
-          {/* Page heading */}
           <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22,1,0.36,1] }}
-            style={{ textAlign: 'center', marginBottom: 'clamp(1.5rem,4vw,2.5rem)' }}
+            initial={{ opacity:0, y:22 }} animate={{ opacity:1, y:0 }}
+            transition={{ duration:0.8, ease:[0.22,1,0.36,1] }}
+            style={{ textAlign:'center', marginBottom:'clamp(1.5rem,4vw,2.5rem)' }}
           >
             <p style={MP.eyebrow}>لمن يهمه الأمر</p>
             <h1 style={MP.pageTitle}>رسائل ونصائح</h1>
             <div style={MP.pageDivider} />
           </motion.div>
 
-          {/* Tab nav */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.65 }}
-            style={{ display: 'flex', justifyContent: 'center' }}
+            initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }}
+            transition={{ delay:0.15, duration:0.65 }}
+            style={{ display:'flex', justifyContent:'center' }}
           >
             <TabNav active={activeTab} onChange={handleTab} />
           </motion.div>
 
-          {/* Tab content */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.4, ease: [0.22,1,0.36,1] }}
+              initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }}
+              transition={{ duration:0.4, ease:[0.22,1,0.36,1] }}
             >
-              {activeTab === 'messages'
-                ? <MessagesSection />
-                : <AdviceSection />
-              }
+              {activeTab === 'messages' ? <MessagesSection /> : <AdviceSection />}
             </motion.div>
           </AnimatePresence>
-
         </div>
       </div>
     </motion.div>
@@ -483,16 +488,12 @@ export default function MessagesPage() {
 
 const MP = {
   scroll: {
-    overflowY: 'auto',
-    height: '100dvh',
-    paddingTop: 'clamp(5.5rem,14vh,8rem)',
-    paddingBottom: '4rem',
-    scrollbarWidth: 'none',
+    overflowY: 'auto', height: '100dvh',
+    paddingTop: 'clamp(5.5rem,14vh,8rem)', paddingBottom: '4rem', scrollbarWidth: 'none',
   },
   inner: {
     width: '100%', maxWidth: 780, margin: '0 auto',
-    padding: '0 clamp(1rem,4vw,2rem)',
-    position: 'relative', zIndex: 1,
+    padding: '0 clamp(1rem,4vw,2rem)', position: 'relative', zIndex: 1,
   },
   eyebrow: {
     fontFamily: `'Scheherazade New','Arial',serif`,

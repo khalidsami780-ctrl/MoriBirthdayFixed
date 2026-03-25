@@ -1,20 +1,24 @@
 /* ═══════════════════════════════════════════════════════════════
-   📝  ADVICE POSTS DATA FILE
+   📝  ADVICE POSTS
    ───────────────────────────────────────────────────────────────
    HOW TO ADD A NEW POST:
-   1. Copy the template object below
-   2. Paste it at the TOP of the array (newest first)
-   3. Fill in: title, content, link (optional), date
-   4. Save — it will appear automatically on the page
-
+   1. Paste a new object at the TOP of the array
+   2. Fill in: id, title, content, date
+   3. (Optional) add media:
+        mediaUrl:  "https://res.cloudinary.com/YOUR_CLOUD/..."
+        mediaType: "image"  or  "video"
+   4. Save — appears automatically, newest first
+ 
    Template:
    {
-     id:      unique number,
-     title:   "عنوان النصيحة",
-     content: "نص النصيحة هنا…",
-     link:    "https://..." ,   // leave "" if no link
-     linkLabel: "اقرأ أكثر",   // label shown on the link button
-     date:    "2026-03-23",     // YYYY-MM-DD
+     id:        <next number>,
+     title:     "عنوان النصيحة",
+     content:   `نص النصيحة…`,
+     link:      "",           // optional external link
+     linkLabel: "اقرأ أكثر",
+     date:      "2026-03-23",
+     mediaUrl:  "",           // leave "" for text-only
+     mediaType: "image",      // "image" | "video"
    },
 ═══════════════════════════════════════════════════════════════ */
 

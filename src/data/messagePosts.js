@@ -1,23 +1,38 @@
 /* ═══════════════════════════════════════════════════════════════
-   📝  MESSAGE POSTS DATA FILE
+   📝  MESSAGE POSTS
    ───────────────────────────────────────────────────────────────
    HOW TO ADD A NEW MESSAGE:
-   1. Copy the template object below
-   2. Paste it at the TOP of the array (it will appear first)
-   3. Fill in: title, content, date
-   4. Save — it appears automatically on the page
-
+   1. Paste a new object at the TOP of the array
+   2. Fill in: id, title, content, date
+   3. (Optional) add media:
+        mediaUrl:  "https://res.cloudinary.com/YOUR_CLOUD/..."
+        mediaType: "image"  or  "video"
+   4. Save — appears automatically, newest first
+ 
    Template:
    {
-     id:      <next number>,
-     title:   "عنوان الرسالة",
-     content: `نص الرسالة هنا…
-متعدد الأسطر بهذا الشكل`,
-     date:    "2026-03-23",    // YYYY-MM-DD
+     id:        <next number>,
+     title:     "عنوان الرسالة",
+     content:   `نص الرسالة…`,
+     date:      "2026-03-23",
+     mediaUrl:  "",          // leave "" for text-only
+     mediaType: "image",     // "image" | "video"
    },
 ═══════════════════════════════════════════════════════════════ */
 
+import { title } from "framer-motion/client";
+
 export const messagePosts = [
+
+  {
+    id:5,
+    title: "I will still want You ",
+    content: " سأبقى أريدك لا يهمني كم سيكون الامر معقدا ",
+    date: "2026-03-26",
+    mediaUrl:"https://res.cloudinary.com/djdktudjh/video/upload/v1774477048/IStillWantU_znjm7u.mp4" ,
+    mediaType: "video",
+  },
+
    {
      id:      3,
      title:   "From My heart",
