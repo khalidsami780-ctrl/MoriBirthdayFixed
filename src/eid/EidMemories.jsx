@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Stars from '../components/Stars.jsx'
 
-// ── Real photo + video imports ───────────────────────────────────
-import photo1 from '../assets/memories/photo1.jpg'
-import photo2 from '../assets/memories/photo2.jpg'
-import photo3 from '../assets/memories/photo3.jpg'
-import photo4 from '../assets/memories/photo4.jpg'
-import photo6 from '../assets/memories/photo6.jpg'
-import Vid    from '../assets/memories/Vid.mp4'
-import MyPhoneWallpaper from '../assets/memories/MyPhoneWallpaper.jpg'
+// ── Cloudinary photo + video imports ───────────────────────────────────
+const photo1 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617703/photo1_if8iym.jpg'
+const photo2 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617703/photo2_qugg6j.jpg'
+const photo3 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617336/photo3_pixcje.jpg'
+const photo4 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617337/photo4_fl9v8o.jpg'
+const photo6 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617702/photo6_dd3k8p.jpg'
+const Vid = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774617353/Vid_yotk1v.mp4'
+const MyPhoneWallpaper = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617703/MyPhoneWallpaper_iqju9j.jpg'
 
 const MEMORIES = [
   { id: 1, type: 'image', src: photo1, caption: 'You felt like home' },

@@ -4,15 +4,15 @@ import Stars from '../components/Stars.jsx'
 
 
 // ── Eid songs ─────────────────
-import sElid_Elid from '../music/العيد العيد.mp3'
-import sElOyoun    from '../music/el-oyoun-di.mp3'
-import sKhalik     from '../music/khalik-maaya.m4a'
-import sSiret      from '../music/siret-el-hob.m4a'
-import sOloha      from '../music/oloha-anni.m4a'
-import sfe_2alpy_fatat      from '../music/عبدالرحمن_محمد_بِروحي_فَتاةٌ_مع_الكلمات_بدون_موسيقى_M4A_128K.m4a'
-import sBename3ad from '../music/و_بينا_ميعاد_عمرو_دياب_بدون_موسيقىM4A_128K.m4a'
-import sWalaqad_zakartoka_wel_rema7_nawahil_menny from '../music/ولقد ذكرتك والرماح نواهل مني.mp3'
-import sLa_7ad_ba3dak_yemla_3youny from '../music/لا حد بعدك يملئ عيوني.mp3'
+const sElid_Elid = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620421/%D8%A7%D9%84%D8%B9%D9%8A%D8%AF_%D8%A7%D9%84%D8%B9%D9%8A%D8%AF_gxeohq.mp3'
+const sElOyoun = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620432/el-oyoun-di_szfwoa.mp3'
+const sKhalik = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620462/khalik-maaya_ngh3jm.m4a'
+const sSiret = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620470/siret-el-hob_gv2bhs.m4a'
+const sOloha = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620461/oloha-anni_cpfjqk.m4a'
+const sfe_2alpy_fatat = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620447/%D8%B9%D8%A8%D8%AF%D8%A7%D9%84%D8%B1%D8%AD%D9%85%D9%86_%D9%85%D8%AD%D9%85%D8%AF_%D8%A8%D9%90%D8%B1%D9%88%D8%AD%D9%8A_%D9%81%D9%8E%D8%AA%D8%A7%D8%A9%D9%8C_%D9%85%D8%B9_%D8%A7%D9%84%D9%83%D9%84%D9%85%D8%A7%D8%AA_%D8%A8%D8%AF%D9%88%D9%86_%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89_M4A_128K_h6lmnj.m4a'
+const sBename3ad = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620454/%D9%88_%D8%A8%D9%8A%D9%86%D8%A7_%D9%85%D9%8A%D8%B9%D8%A7%D8%AF_%D8%B9%D9%85%D8%B1%D9%88_%D8%AF%D9%8A%D8%A7%D8%A8_%D8%A8%D8%AF%D9%88%D9%86_%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89M4A_128K_emwkpg.m4a'
+const sWalaqad_zakartoka_wel_rema7_nawahil_menny = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620427/%D9%88%D9%84%D9%82%D8%AF_%D8%B0%D9%83%D8%B1%D8%AA%D9%83_%D9%88%D8%A7%D9%84%D8%B1%D9%85%D8%A7%D8%AD_%D9%86%D9%88%D8%A7%D9%87%D9%84_%D9%85%D9%86%D9%8A_e2c9rq.mp3'
+const sLa_7ad_ba3dak_yemla_3youny = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620421/%D9%84%D8%A7_%D8%AD%D8%AF_%D8%A8%D8%B9%D8%AF%D9%83_%D9%8A%D9%85%D9%84%D8%A6_%D8%B9%D9%8A%D9%88%D9%86%D9%8A_up7tq9.mp3'
 
 
 const EID_PLAYLIST = [

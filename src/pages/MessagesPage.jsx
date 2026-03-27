@@ -1,9 +1,16 @@
 import { useState, useRef, useCallback, memo } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
+import { Cloudinary } from '@cloudinary/url-gen'
+import { AdvancedImage, AdvancedVideo, placeholder } from '@cloudinary/react'
+import { format, quality } from '@cloudinary/url-gen/actions/delivery'
 import WorldSwitcher from '../shared/WorldSwitcher.jsx'
 import Stars from '../components/Stars.jsx'
 import { messagePosts } from '../data/messagePosts.js'
 import { advicePosts }  from '../data/advicePosts.js'
+
+const cld = new Cloudinary({
+  cloud: { cloudName: 'djdktudjh' }
+})
 
 /* ═══════════════════════════════════════════════════════════════
    MEDIA BLOCK
@@ -13,6 +20,18 @@ import { advicePosts }  from '../data/advicePosts.js'
 function MediaBlock({ mediaUrl, mediaType }) {
   if (!mediaUrl) return null
 
+  // Extract public ID from raw URL to use with Cloudinary SDK
+  const match = mediaUrl.match(/\/upload\/(?:v\d+\/)?([^.]+)/)
+  const publicId = match ? match[1] : ''
+
+  if (!publicId) return null
+
+  // Generate optimized Cloudinary asset instances
+  const mediaAsset = mediaType === 'video' ? cld.video(publicId) : cld.image(publicId)
+  
+  // Apply format and quality auto optimizations
+  mediaAsset.delivery(format('auto')).delivery(quality('auto'))
+
   return (
     <motion.div
       style={MB.wrap}
@@ -21,22 +40,24 @@ function MediaBlock({ mediaUrl, mediaType }) {
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
     >
       {mediaType === 'video' ? (
-        <video
-          src={mediaUrl}
+        <AdvancedVideo
+          cldVid={mediaAsset}
           controls
           playsInline
-          preload="metadata"
           style={MB.media}
         />
       ) : (
-        <motion.img
-          src={mediaUrl}
-          alt=""
-          loading="lazy"
-          style={MB.media}
+        <motion.div
           whileHover={{ scale: 1.025 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        />
+          style={{ width: '100%', lineHeight: 0 }}
+        >
+          <AdvancedImage
+            cldImg={mediaAsset}
+            plugins={[placeholder({ mode: 'blur' })]}
+            style={MB.media}
+          />
+        </motion.div>
       )}
     </motion.div>
   )
