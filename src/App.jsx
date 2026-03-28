@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { analytics } from './firebase.js'
+import { analytics, db } from './firebase.js'
 import { logEvent } from 'firebase/analytics'
+import { collection, addDoc } from 'firebase/firestore'
 
 /* ── Code splitting: each page loads only when navigated to ── */
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
@@ -75,15 +76,22 @@ export default function App() {
           // Ignored. E.g. adblocker blocked the API call.
         }
 
-        // Send detailed Firebase event
-        logEvent(analytics, 'unique_visit', {
-          device,
+        const visitData = {
+          deviceType: device,
           browser,
-          os,
+          OS: os,
           country,
           city,
           timestamp: Date.now()
-        })
+        }
+
+        // Send detailed Firebase Analytics event
+        logEvent(analytics, 'unique_visit', visitData)
+
+        // Save detailed record to Firestore Database
+        if (db) {
+          await addDoc(collection(db, "visitors"), visitData)
+        }
 
         // Flag the browser so they aren't counted twice
         localStorage.setItem('hasVisited', 'true')
