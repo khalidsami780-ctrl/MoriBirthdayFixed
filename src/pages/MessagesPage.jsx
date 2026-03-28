@@ -1,83 +1,10 @@
 import { useState, useRef, useCallback, memo } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
-import { Cloudinary } from '@cloudinary/url-gen'
-import { AdvancedImage, AdvancedVideo, placeholder } from '@cloudinary/react'
-import { format, quality } from '@cloudinary/url-gen/actions/delivery'
+import MediaGallery from '../components/MediaGallery.jsx'
 import WorldSwitcher from '../shared/WorldSwitcher.jsx'
 import Stars from '../components/Stars.jsx'
-import { messagePosts } from '../data/messagePosts.js'
-import { advicePosts }  from '../data/advicePosts.js'
-
-const cld = new Cloudinary({
-  cloud: { cloudName: 'djdktudjh' }
-})
-
-/* ═══════════════════════════════════════════════════════════════
-   MEDIA BLOCK
-   Renders an image or video from a Cloudinary (or any) URL.
-   Returns null if mediaUrl is empty — fully optional.
-═══════════════════════════════════════════════════════════════ */
-function MediaBlock({ mediaUrl, mediaType }) {
-  if (!mediaUrl) return null
-
-  // Extract public ID from raw URL to use with Cloudinary SDK
-  const match = mediaUrl.match(/\/upload\/(?:v\d+\/)?([^.]+)/)
-  const publicId = match ? match[1] : ''
-
-  if (!publicId) return null
-
-  // Generate optimized Cloudinary asset instances
-  const mediaAsset = mediaType === 'video' ? cld.video(publicId) : cld.image(publicId)
-  
-  // Apply format and quality auto optimizations
-  mediaAsset.delivery(format('auto')).delivery(quality('auto'))
-
-  return (
-    <motion.div
-      style={MB.wrap}
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {mediaType === 'video' ? (
-        <AdvancedVideo
-          cldVid={mediaAsset}
-          controls
-          playsInline
-          style={MB.media}
-        />
-      ) : (
-        <motion.div
-          whileHover={{ scale: 1.025 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          style={{ width: '100%', lineHeight: 0 }}
-        >
-          <AdvancedImage
-            cldImg={mediaAsset}
-            plugins={[placeholder({ mode: 'blur' })]}
-            style={MB.media}
-          />
-        </motion.div>
-      )}
-    </motion.div>
-  )
-}
-
-const MB = {
-  wrap: {
-    marginTop: '1.5rem',
-    borderRadius: 16,
-    overflow: 'hidden',
-    boxShadow: '0 8px 36px rgba(0,0,0,0.55), 0 0 0 1px rgba(91,156,246,0.12)',
-    background: '#000',
-  },
-  media: {
-    width: '100%',
-    display: 'block',
-    borderRadius: 16,
-    objectFit: 'cover',
-  },
-}
+import { messages as messagePosts } from '../data/messages.js'
+import { tips as advicePosts } from '../data/tips.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
@@ -146,6 +73,8 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.06 })
 
+  const validMedia = post.media || []
+
   return (
     <motion.article
       ref={ref}
@@ -162,7 +91,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
       <div style={MC.topLine} />
 
       <time style={MC.date}>
-        {new Date(post.date).toLocaleDateString('ar-EG', {
+        {new Date(post.createdAt).toLocaleDateString('ar-EG', {
           year: 'numeric', month: 'long', day: 'numeric',
         })}
       </time>
@@ -171,10 +100,14 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
       <div style={MC.divider} />
       <div style={MC.quoteIcon}>❝</div>
 
-      <p style={MC.content}>{post.content}</p>
+      <p style={MC.content}>{post.text}</p>
 
-      {/* ── Media (image or video from Cloudinary) ── */}
-      <MediaBlock mediaUrl={post.mediaUrl} mediaType={post.mediaType} />
+      {/* ── Extracted Media Gallery Multi-Processor ── */}
+      {validMedia.length > 0 && (
+        <div style={{ width: '100%', flexShrink: 0, display: 'block' }}>
+          <MediaGallery attachments={validMedia} />
+        </div>
+      )}
 
       <div style={MC.footerDivider} />
       <p style={MC.note}>
@@ -253,6 +186,8 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.08 })
 
+  const validMedia = post.media || []
+
   return (
     <motion.article
       ref={ref}
@@ -269,7 +204,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       <div style={AC.topLine} />
 
       <time style={AC.date}>
-        {new Date(post.date).toLocaleDateString('ar-EG', {
+        {new Date(post.createdAt).toLocaleDateString('ar-EG', {
           year: 'numeric', month: 'long', day: 'numeric',
         })}
       </time>
@@ -277,10 +212,14 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       <h3 style={AC.title}>{post.title}</h3>
       <div style={AC.divider} />
 
-      <p style={AC.content}>{post.content}</p>
+      <p style={AC.content}>{post.text}</p>
 
-      {/* ── Media (image or video from Cloudinary) ── */}
-      <MediaBlock mediaUrl={post.mediaUrl} mediaType={post.mediaType} />
+      {/* ── Extracted Media Gallery Multi-Processor ── */}
+      {validMedia.length > 0 && (
+        <div style={{ width: '100%', flexShrink: 0, display: 'block' }}>
+          <MediaGallery attachments={validMedia} />
+        </div>
+      )}
 
       {post.link && (
         <a href={post.link} target="_blank" rel="noopener noreferrer" style={AC.link}>
@@ -402,7 +341,7 @@ const TN = {
    SECTION WRAPPERS
 ═══════════════════════════════════════════════════════════════ */
 function MessagesSection() {
-  const sorted = [...messagePosts].sort((a, b) => new Date(b.date) - new Date(a.date))
+  const sorted = [...messagePosts].sort((a, b) => b.createdAt - a.createdAt)
   return (
     <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
       <SectionHeader eyebrow="كلمات من القلب" title="الرسائل" />
@@ -420,7 +359,7 @@ function MessagesSection() {
 }
 
 function AdviceSection() {
-  const sorted = [...advicePosts].sort((a, b) => new Date(b.date) - new Date(a.date))
+  const sorted = [...advicePosts].sort((a, b) => b.createdAt - a.createdAt)
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
       <SectionHeader eyebrow="نصائح… ل موري" title="النصائح" />

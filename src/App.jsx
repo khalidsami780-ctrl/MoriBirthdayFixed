@@ -4,12 +4,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { analytics, db } from './firebase.js'
 import { logEvent } from 'firebase/analytics'
 import { collection, addDoc } from 'firebase/firestore'
+import NewMessageNotifier from './components/NewMessageNotifier.jsx'
 
 /* ── Code splitting: each page loads only when navigated to ── */
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
 const EidPage       = lazy(() => import('./pages/EidPage.jsx'))
 const MessagesPage  = lazy(() => import('./pages/MessagesPage.jsx'))
-const Admin         = lazy(() => import('./pages/Admin.jsx'))
 
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
@@ -57,10 +57,17 @@ export default function App() {
   const location = useLocation()
 
   useEffect(() => {
-    // Abort if no analytics loaded OR if they have already visited
-    if (!analytics || localStorage.getItem('hasVisited')) return
+    // Abort if no analytics loaded
+    if (!analytics) return
 
     const trackUniqueVisit = async () => {
+      // 1. Generate or retrieve permanent User ID
+      let userId = localStorage.getItem("mori_user_id");
+      if (!userId) {
+        userId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem("mori_user_id", userId);
+      }
+
       try {
         const { device, os, browser } = parseUserAgent(navigator.userAgent)
         let country = 'Unknown', city = 'Unknown'
@@ -78,6 +85,7 @@ export default function App() {
         }
 
         const visitData = {
+          userId,
           deviceType: device,
           browser,
           OS: os,
@@ -94,8 +102,6 @@ export default function App() {
           await addDoc(collection(db, "visitors"), visitData)
         }
 
-        // Flag the browser so they aren't counted twice
-        localStorage.setItem('hasVisited', 'true')
       } catch (e) {
         console.error('Tracking failed', e)
       }
@@ -106,13 +112,13 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageLoader />}>
+      <NewMessageNotifier />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/"          element={<Navigate to="/birthday" replace />} />
           <Route path="/birthday"  element={<BirthdayPage />} />
           <Route path="/eid"       element={<EidPage />} />
           <Route path="/messages"  element={<MessagesPage />} />
-          <Route path="/kh-hidden-analytics-7x9q" element={<Admin />} />
           <Route path="*"          element={<Navigate to="/birthday" replace />} />
         </Routes>
       </AnimatePresence>
