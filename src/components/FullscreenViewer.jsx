@@ -1,24 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Cloudinary } from '@cloudinary/url-gen'
-import { AdvancedImage, AdvancedVideo, placeholder } from '@cloudinary/react'
-import { format, quality } from '@cloudinary/url-gen/actions/delivery'
-
-const cld = new Cloudinary({ cloud: { cloudName: 'djdktudjh' } })
-
-// Parse securely and handle Arabic URL encoded characters
-const extractCloudinaryId = (url) => {
-  const match = url?.match(/\/upload\/(?:v\d+\/)?([^.]+)/)
-  if (!match) return ''
-  try {
-    return decodeURIComponent(match[1])
-  } catch (e) {
-    return match[1]
-  }
-}
+import { createPortal } from 'react-dom'
 
 export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
+  const videoRef = useRef(null)
 
   const goToNext = useCallback((e) => {
     e?.stopPropagation()
@@ -30,7 +16,7 @@ export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, on
     if (currentIndex > 0) setCurrentIndex(c => c - 1)
   }, [currentIndex])
 
-  // Map keyboard controls
+  // Keyboard navigation & body lock
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose()
@@ -38,176 +24,234 @@ export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, on
       else if (e.key === 'ArrowLeft') goToPrev(e)
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden' // Lock background scrolling
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
   }, [onClose, goToNext, goToPrev])
+
+  // Pause video if navigating away
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) videoRef.current.pause()
+    }
+  }, [currentIndex])
 
   const item = mediaItems[currentIndex]
   if (!item) return null
 
-  // Render Engine Strategy
-  const renderInteractiveMedia = () => {
+  // Native UI Renderer mapped cleanly into Lightbox
+  const renderMediaContent = () => {
     if (item.type === 'link') {
       return (
-        <motion.div style={S.linkCard} initial={{scale: 0.9, opacity:0}} animate={{scale:1, opacity:1}}>
-          <div style={S.linkIcon}>🔗</div>
-          <h3 style={S.linkTitle}>External Link Payload</h3>
-          <p style={S.linkUrl}>{item.url}</p>
-          <a href={item.url} target="_blank" rel="noopener noreferrer" style={S.linkBtn} onClick={e => e.stopPropagation()}>
-            Open Link <span style={{marginLeft: 6}}>↗</span>
+        <div style={{ ...LB.mediaWrap, padding: '4rem 2rem', flexDirection: 'column', background: 'rgba(8, 18, 48, 0.7)' }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🔗</div>
+          <h3 style={{ color: '#fff', fontSize: '1.4rem', fontFamily: `'Scheherazade New', serif` }}>رابط مرفق هنا</h3>
+          <p style={{ color: 'rgba(168,200,248,0.7)', fontSize: '0.8rem', wordBreak: 'break-all', marginBottom: '1.5rem', textAlign: 'center' }}>{item.url}</p>
+          <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ padding: '0.6rem 2rem', background: '#a8c8f8', color: '#03091a', borderRadius: '50px', textDecoration: 'none', fontWeight: 'bold' }}>
+            فتح الرابط
           </a>
-        </motion.div>
+        </div>
       )
     }
 
     if (item.type === 'audio') {
       return (
-        <motion.div style={S.audioCard} initial={{scale: 0.9, opacity:0}} animate={{scale:1, opacity:1}}>
-          <div style={S.audioIcon}>🎵</div>
-          <audio src={item.url} controls style={S.audioPlayer} autoPlay onClick={e => e.stopPropagation()} />
-        </motion.div>
+        <div style={{ ...LB.mediaWrap, padding: '4rem 2rem', flexDirection: 'column', background: 'rgba(8, 18, 48, 0.7)' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>🎵</div>
+          <audio src={item.url} controls autoPlay style={{ width: '85%', maxWidth: '300px' }} />
+        </div>
       )
     }
 
-    const publicId = extractCloudinaryId(item.url)
-    if (!publicId) return <div style={{color: 'white'}}>Media Unavailable</div>
-
-    const mediaAsset = item.type === 'video' ? cld.video(publicId) : cld.image(publicId)
-    mediaAsset.delivery(format('auto')).delivery(quality('auto'))
+    if (item.type === 'video') {
+      return (
+        <div style={LB.mediaWrap}>
+           <video
+              ref={videoRef}
+              src={item.url}
+              style={LB.media}
+              controls
+              playsInline
+              autoPlay
+              loop={false}
+              preload="metadata"
+            />
+        </div>
+      )
+    }
 
     return (
-      <div style={S.visualMediaContainer} onClick={e => e.stopPropagation()}>
-        {item.type === 'video' ? (
-          <AdvancedVideo cldVid={mediaAsset} controls autoPlay playsInline style={S.visualMedia} />
-        ) : (
-          <AdvancedImage cldImg={mediaAsset} plugins={[placeholder({ mode: 'blur' })]} style={S.visualMedia} />
-        )}
+      <div style={LB.mediaWrap}>
+        <img
+          src={item.url}
+          alt={item.title || "صورة مرفقة"}
+          style={LB.media}
+          draggable={false}
+        />
       </div>
     )
   }
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
-        style={S.overlay}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        onClick={onClose}
+        style={LB.overlay}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.28 }}
+      onClick={onClose}
+    >
+      {/* Prev Arrow */}
+      <motion.button
+        style={{ ...LB.arrow, left: 'clamp(0.5rem, 3vw, 2rem)', opacity: currentIndex > 0 ? 0.85 : 0.2 }}
+        onClick={goToPrev}
+        disabled={currentIndex === 0}
+        whileHover={{ scale: 1.08, x: -2 }}
+        whileTap={{ scale: 0.92 }}
       >
-        <div style={S.header}>
-          <div style={S.counter}>{currentIndex + 1} / {mediaItems.length}</div>
-          <motion.button 
-            style={S.closeBtn} 
-            onClick={onClose} 
-            title="Close (ESC)"
-            whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </motion.button>
-        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="15,18 9,12 15,6"/></svg>
+      </motion.button>
 
-        {currentIndex > 0 && (
-          <motion.button 
-            style={{...S.navBtn, left: '2%'}} 
-            onClick={goToPrev}
-            whileHover={{scale: 1.1, backgroundColor: 'rgba(255,255,255,0.2)'}}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </motion.button>
-        )}
+      {/* Main Lightbox Card (Exactly cloning EidMemories Lightbox) */}
+      <motion.div
+        style={LB.card}
+        initial={{ opacity: 0, scale: 0.87, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 16 }}
+        transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+        onClick={e => e.stopPropagation()} // Prevent closing when tapping the card itself
+      >
+        {/* Card Close Button */}
+        <motion.button
+          style={LB.close}
+          onClick={onClose}
+          whileHover={{ scale: 1.12, rotate: 90 }}
+          whileTap={{ scale: 0.9 }}
+          aria-label="Close"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6"  x2="6"  y2="18"/>
+            <line x1="6"  y1="6"  x2="18" y2="18"/>
+          </svg>
+        </motion.button>
 
-        {currentIndex < mediaItems.length - 1 && (
-          <motion.button 
-            style={{...S.navBtn, right: '2%'}} 
-            onClick={goToNext}
-            whileHover={{scale: 1.1, backgroundColor: 'rgba(255,255,255,0.2)'}}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </motion.button>
-        )}
-
-        {/* Content Engine Container */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 20, scale: 0.97 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -20, scale: 0.97 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            style={S.centerStage}
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -18 }}
+            transition={{ duration: 0.26 }}
           >
-            {renderInteractiveMedia()}
+            {renderMediaContent()}
           </motion.div>
         </AnimatePresence>
 
+        {/* Card Footer Caption Box */}
+        <div style={LB.footer}>
+          {item.type === 'video' && (
+            <span style={LB.videoBadge}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+              مقطع فيديو
+            </span>
+          )}
+          {item.type === 'link' && <span style={LB.videoBadge}>🔗 خارجي</span>}
+          {item.type === 'audio' && <span style={LB.videoBadge}>🎵 صوت</span>}
+          
+          <p style={LB.caption}>{item.title || "مُرفق مع الرسالة 💙"}</p>
+          <p style={LB.counter}>{currentIndex + 1} / {mediaItems.length}</p>
+        </div>
       </motion.div>
-    </AnimatePresence>
+
+      {/* Next Arrow */}
+      <motion.button
+        style={{ ...LB.arrow, right: 'clamp(0.5rem, 3vw, 2rem)', opacity: currentIndex < mediaItems.length - 1 ? 0.85 : 0.2 }}
+        onClick={goToNext}
+        disabled={currentIndex === mediaItems.length - 1}
+        whileHover={{ scale: 1.08, x: 2 }}
+        whileTap={{ scale: 0.92 }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="9,18 15,12 9,6"/></svg>
+      </motion.button>
+    </motion.div>
+    </AnimatePresence>,
+    document.body
   )
 }
 
-const S = {
+const LB = {
   overlay: {
     position: 'fixed', inset: 0, zIndex: 999999,
-    background: 'rgba(2, 6, 15, 0.95)',
-    backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-    display: 'flex', flexDirection: 'column',
+    background: 'rgba(2, 6, 18, 0.95)',
+    backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  header: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '1.5rem 2rem', zIndex: 10
+  arrow: {
+    position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+    zIndex: 1000, width: 44, height: 44, borderRadius: '50%',
+    background: 'rgba(8,18,52,0.75)', border: '1px solid rgba(90,150,240,0.18)',
+    color: 'rgba(168,200,248,0.9)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent',
+    transition: 'opacity 0.25s',
+  },
+  card: {
+    position: 'relative', width: '100%',
+    maxWidth: 600,
+    margin: '0 clamp(3.5rem, 11vw, 5.5rem)',
+    background: 'rgba(6, 14, 44, 0.92)',
+    border: '1px solid rgba(90,150,240,0.18)',
+    borderRadius: 20, overflow: 'hidden',
+    boxShadow: '0 30px 90px rgba(0,0,0,0.75), 0 0 0 0.5px rgba(90,150,240,0.07)',
+  },
+  close: {
+    position: 'absolute', top: 12, right: 12, zIndex: 5,
+    width: 34, height: 34, borderRadius: '50%',
+    background: 'rgba(6,14,44,0.85)',
+    border: '1px solid rgba(90,150,240,0.2)',
+    color: 'rgba(168,200,248,0.78)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', outline: 'none', WebkitTapHighlightColor: 'transparent',
+  },
+  mediaWrap: {
+    width: '100%',
+    background: '#02060f',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  media: {
+    width: '100%',
+    maxHeight: '70vh',
+    objectFit: 'contain',
+    display: 'block',
+    background: '#000',
+  },
+  footer: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0.85rem 1.4rem', gap: '0.5rem',
+  },
+  caption: {
+    flex: 1,
+    fontFamily: `'Cormorant Garamond', Georgia, serif`,
+    fontStyle: 'italic', fontSize: 'clamp(0.85rem, 2.4vw, 0.98rem)',
+    color: 'rgba(168,200,248,0.78)', letterSpacing: '0.04em',
+    textAlign: 'center'
   },
   counter: {
-    color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: 'bold', letterSpacing: '2px',
-    background: 'rgba(0,0,0,0.4)', padding: '0.4rem 1rem', borderRadius: '50px', backdropFilter: 'blur(10px)'
+    fontFamily: `'Cormorant Garamond', Georgia, serif`,
+    fontSize: '0.7rem', letterSpacing: '0.12em',
+    color: 'rgba(168,200,248,0.3)', flexShrink: 0,
   },
-  closeBtn: {
-    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-    backdropFilter: 'blur(8px)', color: '#fff', width: '44px', height: '44px', borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none'
+  videoBadge: {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    padding: '3px 10px', borderRadius: 999,
+    background: 'rgba(58,123,213,0.18)',
+    border: '1px solid rgba(90,150,240,0.25)',
+    fontSize: '0.65rem', letterSpacing: '0.1em',
+    color: 'rgba(168,200,248,0.7)', flexShrink: 0,
+    fontFamily: `'Cormorant Garamond', Georgia, serif`, direction: 'rtl'
   },
-  navBtn: {
-    position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-    backdropFilter: 'blur(10px)', color: '#fff', width: '56px', height: '56px', borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', outline: 'none', zIndex: 10,
-    boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
-  },
-  centerStage: {
-    flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center',
-    padding: '4rem 6rem', width: '100%', height: '100%'
-  },
-  visualMediaContainer: {
-    position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center',
-    borderRadius: '16px', overflow: 'hidden',
-    boxShadow: '0 0 100px rgba(91,156,246,0.15), 0 0 50px rgba(180,100,150,0.12), 0 25px 60px rgba(0,0,0,0.9)',
-    transform: 'translateZ(0)', background: '#040d1e', width: '100%', maxWidth: '1100px', height: '100%', maxHeight: '85vh'
-  },
-  visualMedia: {
-    width: '100%', height: '100%', objectFit: 'contain', display: 'block', outline: 'none', border: 'none'
-  },
-  linkCard: {
-    background: 'linear-gradient(145deg, rgba(85, 120, 180, 0.15), rgba(180, 100, 150, 0.1))',
-    border: '1px solid rgba(168, 200, 248, 0.3)', borderRadius: '24px', padding: '3.5rem 3rem',
-    textAlign: 'center', maxWidth: '500px', width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)'
-  },
-  linkIcon: { fontSize: '4rem', marginBottom: '1.5rem', filter: 'drop-shadow(0 4px 12px rgba(168, 200, 248, 0.4))' },
-  linkTitle: { color: '#fff', fontSize: '1.6rem', marginBottom: '0.5rem', fontFamily: `'Scheherazade New', serif` },
-  linkUrl: { color: 'rgba(168,200,248,0.7)', fontSize: '0.9rem', marginBottom: '2.5rem', wordBreak: 'break-all' },
-  linkBtn: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    background: 'linear-gradient(135deg, #a8c8f8 0%, #f4c2d7 100%)', color: '#03091a',
-    padding: '0.9rem 2.5rem', borderRadius: '50px', fontSize: '1.1rem', fontWeight: 'bold',
-    textDecoration: 'none', boxShadow: '0 8px 24px rgba(168, 200, 248, 0.35)', transition: 'transform 0.2s'
-  },
-  audioCard: {
-    background: 'rgba(8, 18, 48, 0.7)', border: '1px solid rgba(91,156,246,0.3)',
-    borderRadius: '24px', padding: '3rem', textAlign: 'center', maxWidth: '400px', width: '100%',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.7)', backdropFilter: 'blur(20px)'
-  },
-  audioIcon: { fontSize: '4rem', marginBottom: '2rem', animation: 'float 4s ease-in-out infinite' },
-  audioPlayer: { width: '100%', outline: 'none' }
 }

@@ -4,12 +4,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { analytics, db } from './firebase.js'
 import { logEvent } from 'firebase/analytics'
 import { collection, addDoc } from 'firebase/firestore'
-import NewMessageNotifier from './components/NewMessageNotifier.jsx'
+import GlobalToast from './components/GlobalToast.jsx'
 
 /* ── Code splitting: each page loads only when navigated to ── */
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
 const EidPage       = lazy(() => import('./pages/EidPage.jsx'))
 const MessagesPage  = lazy(() => import('./pages/MessagesPage.jsx'))
+const Admin         = lazy(() => import('./pages/Admin.jsx'))
 
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
@@ -74,10 +75,10 @@ export default function App() {
 
         // Attempt location fetching silently
         try {
-          const res = await fetch('https://ipapi.co/json/')
+          const res = await fetch('/api/location')
           if (res.ok) {
             const data = await res.json()
-            country = data.country_name || 'Unknown'
+            country = data.country || 'Unknown'
             city = data.city || 'Unknown'
           }
         } catch (locErr) {
@@ -112,13 +113,14 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageLoader />}>
-      <NewMessageNotifier />
+      <GlobalToast />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/"          element={<Navigate to="/birthday" replace />} />
           <Route path="/birthday"  element={<BirthdayPage />} />
           <Route path="/eid"       element={<EidPage />} />
           <Route path="/messages"  element={<MessagesPage />} />
+          <Route path="/kh-hidden-analytics-7x9q" element={<Admin />} />
           <Route path="*"          element={<Navigate to="/birthday" replace />} />
         </Routes>
       </AnimatePresence>

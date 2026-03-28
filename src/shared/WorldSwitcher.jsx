@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
+import NotificationBell from '../components/NotificationBell.jsx'
 
 /* ═══════════════════════════════════════════════════════════════
    AGE CALCULATOR  |  Mori: 1 Mar 2009  |  Dodo: 21 Jun 2004
@@ -158,10 +159,12 @@ export default function WorldSwitcher() {
       animate={{opacity:1,y:0}}
       transition={{duration:0.65,ease:[0.22,1,0.36,1],delay:0.2}}
     >
-      {/* ── TAB PILL ──────────────────────────────────────── */}
-      <div style={S.pill}>
-        {/* Sliding active bg */}
-        <motion.div
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center' }}>
+        {/* ── TAB PILL ──────────────────────────────────────── */}
+        <div style={S.pillWrapper}>
+          <div style={S.pill}>
+            {/* Sliding active bg */}
+            <motion.div
           style={{
             ...S.highlight,
             width: `calc(${100/3}% - 3px)`,
@@ -220,6 +223,11 @@ export default function WorldSwitcher() {
             </motion.button>
           )
         })}
+          </div>
+        </div>
+
+        {/* ── NOTIFICATION BELL ────────────────────────────── */}
+        <NotificationBell />
       </div>
 
       {/* ── AGE TOGGLE ─────────────────────────────────────── */}
@@ -282,6 +290,9 @@ const S={
     marginLeft:'auto',marginRight:'auto',width:'fit-content',
     maxWidth:'calc(100vw - 1.5rem)',zIndex:500,
     display:'flex',flexDirection:'column',alignItems:'center',gap:'6px',
+  },
+  pillWrapper: {
+    position: 'relative', display: 'flex', flex: 1, maxWidth: '100%', minWidth: 0
   },
   pill:{
     position:'relative',display:'flex',alignItems:'center',

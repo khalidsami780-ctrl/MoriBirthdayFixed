@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, memo } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
-import MediaGallery from '../components/MediaGallery.jsx'
+import MediaPreview from '../components/MediaPreview.jsx'
 import WorldSwitcher from '../shared/WorldSwitcher.jsx'
 import Stars from '../components/Stars.jsx'
 import { messages as messagePosts } from '../data/messages.js'
@@ -105,7 +105,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
       {/* ── Extracted Media Gallery Multi-Processor ── */}
       {validMedia.length > 0 && (
         <div style={{ width: '100%', flexShrink: 0, display: 'block' }}>
-          <MediaGallery attachments={validMedia} />
+          <MediaPreview media={validMedia} />
         </div>
       )}
 
@@ -217,7 +217,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       {/* ── Extracted Media Gallery Multi-Processor ── */}
       {validMedia.length > 0 && (
         <div style={{ width: '100%', flexShrink: 0, display: 'block' }}>
-          <MediaGallery attachments={validMedia} />
+          <MediaPreview media={validMedia} />
         </div>
       )}
 
