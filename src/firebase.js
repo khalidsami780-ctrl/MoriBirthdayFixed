@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC-6i2qPerSV_G5_lANwXvd418p7soM_mg",
+  apiKey: "AIzaSyDj2STH_p93X_lzZ3am78EZxkEmiEpQDxU",
   authDomain: "mori-website.firebaseapp.com",
   projectId: "mori-website",
   storageBucket: "mori-website.firebasestorage.app",
