@@ -34,11 +34,7 @@ export default function NotificationBell() {
   const handleNotifClick = (notif) => {
     if (!notif.isRead) markAsRead(notif.id)
     setIsOpen(false)
-    navigate(notif.link)
-    // small jump trick to bring 'Messages' section roughly to view if they are already on the page
-    if (window.location.pathname === '/messages') {
-        window.scrollTo({ top: 0, behavior: 'smooth'}) 
-    }
+    navigate(notif.route, { state: { scrollTarget: notif.targetId, tab: notif.tab } })
   }
 
   return (

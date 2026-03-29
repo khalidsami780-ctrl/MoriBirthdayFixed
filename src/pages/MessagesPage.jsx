@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback, memo } from 'react'
+import { useState, useRef, useCallback, memo, useEffect } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import MediaPreview from '../components/MediaPreview.jsx'
 import WorldSwitcher from '../shared/WorldSwitcher.jsx'
+import { useLocation } from 'react-router-dom'
 import Stars from '../components/Stars.jsx'
 import { messages as messagePosts } from '../data/messages.js'
 import { tips as advicePosts } from '../data/tips.js'
@@ -77,6 +78,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
 
   return (
     <motion.article
+      id={`message-${post.id}`}
       ref={ref}
       initial={{ opacity: 0, y: 28, scale: 0.97 }}
       animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
@@ -190,6 +192,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
 
   return (
     <motion.article
+      id={`tip-${post.id}`}
       ref={ref}
       initial={{ opacity: 0, y: 24, scale: 0.97 }}
       animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
@@ -391,8 +394,30 @@ const SEC = {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 export default function MessagesPage() {
-  const [activeTab, setActiveTab] = useState('messages')
+  const location = useLocation()
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'messages')
   const handleTab = useCallback(t => setActiveTab(t), [])
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab)
+    }
+  }, [location.state?.tab])
+
+  useEffect(() => {
+    if (location.state?.scrollTarget) {
+      // Small timeout to allow the tab to render and Framer Motion to paint the DOM geometry
+      const timer = setTimeout(() => {
+        const el = document.getElementById(location.state.scrollTarget)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.classList.add('highlight-glow')
+          setTimeout(() => el.classList.remove('highlight-glow'), 2600)
+        }
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [location.state?.scrollTarget, activeTab])
 
   return (
     <motion.div

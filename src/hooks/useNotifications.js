@@ -35,7 +35,9 @@ export function useNotifications() {
         createdAt: item.createdAt,
         expiresAt: item.createdAt + THIRTY_DAYS_MS,
         isRead: storedRead.includes(item.id),
-        link: '/messages' // Quick tap destination for both types
+        route: '/messages', // Quick tap destination for both types
+        targetId: item.notifType === 'message' ? `message-${item.id}` : `tip-${item.id}`,
+        tab: item.notifType === 'message' ? 'messages' : 'advice'
       }))
       .sort((a, b) => b.createdAt - a.createdAt) // Newest Top
 

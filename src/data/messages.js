@@ -20,6 +20,18 @@ Notes:
 */
 
 export const messages = [
+    {
+    id: "msg-007",
+    title: "لست على ما يرام",
+    text: "أنا لست على ما يرام يا مريم… \n \n أنا مش  كويس ... \n شوفت الريبوست قبل البلوك مرضيتش ابعت لسببين  \n بحاول اساعدك اننا نساعد بعض فى موضوع اننا منتكلمش وبردو عشان كلامك مع مامتك \n وكنت مستني اخلص شغل وهبقى ابعتلك \n اما انا ف هسيب الشغل كمان 10 ايام 😓",
+    media: [
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774819585/I_mTheProblem_kdajpw.mp4" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774819586/pain_wxgeit.mp4" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774819586/needU_qgipix.mp4" }
+    ],
+    createdAt: Date.now()
+  },
+
   {
     id: "msg-006",
     title: "حتى يأذن لنا الله",

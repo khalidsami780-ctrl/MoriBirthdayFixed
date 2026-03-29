@@ -453,3 +453,16 @@ a[style*="border: 1px solid rgba(91,156,246"]:hover {
  
 /* Advice card hover */
 .advice-card:hover { border-color: rgba(91,156,246,0.32) !important; }
+
+/* ── Notification Target Highlight ─────────── */
+@keyframes highlightGlow {
+  0% { box-shadow: 0 0 0 0 rgba(255,105,180, 0); border-color: rgba(91,156,246,0.16); transform: scale(1); }
+  15% { box-shadow: 0 0 32px 4px rgba(255,105,180, 0.45); border-color: rgba(255,105,180, 0.6); transform: scale(1.015); z-index: 50; }
+  85% { box-shadow: 0 0 32px 4px rgba(255,105,180, 0.45); border-color: rgba(255,105,180, 0.6); transform: scale(1.015); z-index: 50; }
+  100% { box-shadow: 0 0 0 0 rgba(255,105,180, 0); border-color: rgba(91,156,246,0.16); transform: scale(1); }
+}
+
+.highlight-glow {
+  animation: highlightGlow 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  position: relative;
+}
