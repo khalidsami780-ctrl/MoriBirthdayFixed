@@ -75,6 +75,7 @@ export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, on
               controls
               playsInline
               autoPlay
+              muted={!!item.muted}
               loop={false}
               preload="metadata"
             />

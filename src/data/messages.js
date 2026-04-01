@@ -20,6 +20,20 @@ Notes:
 */
 
 export const messages = [
+
+  {
+    id: "msg-011",
+    title: "سيبت الشغل😊",
+    text: `قدمت ااستقالتي امبارح و مشيت و حااسس براحة نفسية الى حد ماا دلوقت \n 
+    و هبدأ اخطط وأركز فى اللي جي دعواتك يا اانسة مريم 
+     واالحمد لله متيقن ان كدا كدا بتدعيلي 
+     الميد الااسبوع اللي جي ان شاء الله 
+     اتمنى يكون يومك  الااربعاء عدى على خير اان شاء الله 
+     فى أمان الله💙💙💙`,
+    media: [{ type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775080408/I_mReady_rc79rn.mp4", muted: true }],
+    createdAt: new Date("2026-04-02").getTime()
+  },
+
   {
     id: "msg-010",
     title: "كوكو بيسلم عليكي 🐱",
@@ -106,7 +120,7 @@ export const messages = [
     title: "I will still want You ",
     text: " سأبقى أريدك لا يهمني كم سيكون الامر معقدا ",
     media: [
-      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774477048/IStillWantU_znjm7u.mp4" }
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774477048/IStillWantU_znjm7u.mp4", muted: true }
     ],
     createdAt: new Date("2026-03-26").getTime(),
   },

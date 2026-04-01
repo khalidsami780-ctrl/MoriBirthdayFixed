@@ -37,7 +37,7 @@ function PreviewThumbnail({ item }) {
             ref={videoRef}
             src={item.url}
             style={S.mediaNative}
-            muted
+            muted={item.muted !== false} // preview always muted by default; respects explicit muted:false
             playsInline
             preload="metadata"
             onLoadedMetadata={e => { e.target.currentTime = 0.5 }}
