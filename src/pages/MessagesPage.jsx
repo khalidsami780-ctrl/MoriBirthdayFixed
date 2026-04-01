@@ -344,7 +344,11 @@ const TN = {
    SECTION WRAPPERS
 ═══════════════════════════════════════════════════════════════ */
 function MessagesSection() {
+  const [visibleCount, setVisibleCount] = useState(5)
   const sorted = [...messagePosts].sort((a, b) => b.createdAt - a.createdAt)
+  const visible = sorted.slice(0, visibleCount)
+  const hasMore = visibleCount < sorted.length
+
   return (
     <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
       <SectionHeader eyebrow="كلمات من القلب" title="الرسائل" />
@@ -353,16 +357,43 @@ function MessagesSection() {
         ستُضاف رسائل جديدة من حين لآخر…
       </motion.p>
       <div style={SEC.list}>
-        {sorted.map((post, i) => (
-          <MessageCard key={post.id} post={post} delay={Math.min(i * 0.07, 0.28)} />
-        ))}
+        <AnimatePresence initial={false}>
+          {visible.map((post, i) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: i >= visibleCount - 5 ? (i - (visibleCount - 5)) * 0.07 : 0, ease: [0.22,1,0.36,1] }}
+            >
+              <MessageCard post={post} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
+
+      {hasMore && (
+        <motion.div style={{ textAlign: 'center', marginTop: '1.75rem' }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          <motion.button
+            onClick={() => setVisibleCount(c => c + 5)}
+            style={SEC.loadMoreBtn}
+            whileHover={{ boxShadow: '0 0 20px rgba(91,156,246,0.3)', borderColor: 'rgba(91,156,246,0.5)', color: 'rgba(200,228,255,0.9)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            عرض المزيد …
+          </motion.button>
+        </motion.div>
+      )}
     </div>
   )
 }
 
 function AdviceSection() {
+  const [visibleCount, setVisibleCount] = useState(5)
   const sorted = [...advicePosts].sort((a, b) => b.createdAt - a.createdAt)
+  const visible = sorted.slice(0, visibleCount)
+  const hasMore = visibleCount < sorted.length
+
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
       <SectionHeader eyebrow="نصائح… ل موري" title="النصائح" />
@@ -371,10 +402,33 @@ function AdviceSection() {
         ستُضاف كلمات جديدة من حين لآخر… لمن يهمه أن يقرأ
       </motion.p>
       <div style={SEC.list}>
-        {sorted.map((post, i) => (
-          <AdviceCard key={post.id} post={post} delay={Math.min(i * 0.06, 0.3)} />
-        ))}
+        <AnimatePresence initial={false}>
+          {visible.map((post, i) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: i >= visibleCount - 5 ? (i - (visibleCount - 5)) * 0.07 : 0, ease: [0.22,1,0.36,1] }}
+            >
+              <AdviceCard post={post} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
+
+      {hasMore && (
+        <motion.div style={{ textAlign: 'center', marginTop: '1.75rem' }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          <motion.button
+            onClick={() => setVisibleCount(c => c + 5)}
+            style={SEC.loadMoreBtn}
+            whileHover={{ boxShadow: '0 0 20px rgba(91,156,246,0.3)', borderColor: 'rgba(91,156,246,0.5)', color: 'rgba(200,228,255,0.9)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            عرض المزيد …
+          </motion.button>
+        </motion.div>
+      )}
     </div>
   )
 }
@@ -388,6 +442,18 @@ const SEC = {
     letterSpacing: '0.04em', marginBottom: 'clamp(1.5rem,4vw,2.5rem)',
   },
   list: { display: 'flex', flexDirection: 'column', gap: 'clamp(0.85rem,2.5vw,1.35rem)' },
+  loadMoreBtn: {
+    padding: '0.7rem 2.2rem', borderRadius: 999,
+    border: '1px solid rgba(91,156,246,0.28)',
+    background: 'rgba(91,156,246,0.06)',
+    color: 'rgba(168,200,248,0.7)',
+    fontFamily: `'Scheherazade New','Arial',serif`,
+    fontSize: 'clamp(0.9rem,2.5vw,1.05rem)',
+    direction: 'rtl', cursor: 'pointer', outline: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    transition: 'box-shadow 0.25s, border-color 0.25s, color 0.25s',
+    letterSpacing: '0.04em',
+  },
 }
 
 /* ═══════════════════════════════════════════════════════════════

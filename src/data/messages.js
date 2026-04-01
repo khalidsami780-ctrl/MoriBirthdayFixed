@@ -20,6 +20,66 @@ Notes:
 */
 
 export const messages = [
+  {
+    id: "msg-010",
+    title: "كوكو بيسلم عليكي 🐱",
+    text: `موروو… 🐾
+
+أنا كوكو
+
+أنا مش بنسى اللي بيحبني
+
+موروو تاني عشان في ناس مش بيسمعوا من أول مرة… 😾
+
+— كوكو 🐾`,
+    media: [
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775080428/koko_tnxis4.jpg" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775082676/koko1_igtohy.jpg" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775082676/koko2_ytmzd8.jpg" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775082711/kokoRain_zbxhub.mp4" },
+    ],
+    createdAt: new Date("2026-04-02").getTime()
+  },
+  {
+    id: "msg-009",
+    title: "السعاادة فى وجه اختي",
+    text: `انتي عارفة إني بحب أشاركك أي حاجة بتبسطني، حتى لو كانت بسيطة…
+النهارده جبت لهاجر مضرب نسكافيه كانت محتاجاه بقالها فترة،  😄
+فجبتُهولها كدا على غفلة…
+بصراحة فرحتها كانت حلوة أوي،
+وحسيت إن الحاجات الصغيرة دي بتفرق أكتر ما إحنا متخيلين.
+وحبيت أشاركك اللحظة دي…
+عشان انتي أكتر حد بحب أحكيله وأنا مبسوط.
+دودو كان مبسوط… وهو بيشوف حد بيحبه مبسوط 💙`,
+    media: [
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775080413/HandheldMixer_p3w45e.mp4" }
+    ],
+    createdAt: new Date("2026-04-02").getTime()
+  },
+  {
+    id: "msg-008",
+    title: "فرحة ما شفتهاش منذ فترة",
+    text:` مش عارف أشرحلك أنا مبسوط قد إيه وأنا بجهز الحاجات دي...
+
+كل تفصيلة صغيرة كنت بعملها وأنا متخيل ابتسامتك،
+وكنت بقول لنفسي: يا رب تفرح زي ما أنا فرحان دلوقتي.
+
+أنا بجد سعيد... وسعادتي كلها مرتبطة بيكي،
+ونفسي كل حاجة توصلك بنفس الإحساس ده.
+
+أتمنى تكوني مبسوطة... زي ما دودو مبسوط وسعيد دلوقتي 😊💙`,
+    media: [
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775080428/withUrMug_pjjbkm.jpg" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775080427/NoMoney_nihn6l.jpg" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775080426/setup_calbkh.jpg" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775080424/happy_dxtsvg.jpg" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775080423/coffe_bgljdl.jpg" }
+    ],
+    createdAt: new Date("2026-04-2").getTime()
+  },
+
+  
+
     {
     id: "msg-007",
     title: "لست على ما يرام",
@@ -29,7 +89,7 @@ export const messages = [
       { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774819586/pain_wxgeit.mp4" },
       { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774819586/needU_qgipix.mp4" }
     ],
-    createdAt: Date.now()
+    createdAt: new Date("2026-03-29").getTime()
   },
 
   {

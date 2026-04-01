@@ -18,6 +18,7 @@ function getRelativeTime(timestamp) {
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(8)
   const { notifications, unreadCount, markAsRead } = useNotifications()
   const dropdownRef = useRef(null)
   const navigate = useNavigate()
@@ -94,25 +95,41 @@ export default function NotificationBell() {
               {notifications.length === 0 ? (
                 <div style={S.emptyState}>لا توجد أية تحديثات جديدة 💤</div>
               ) : (
-                notifications.map(notif => (
-                  <motion.div
-                    key={notif.id}
-                    onClick={() => handleNotifClick(notif)}
-                    whileHover={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-                    style={{
-                      ...S.notifItem,
-                      borderRight: notif.isRead ? '3px solid transparent' : '3px solid #f4c2d7',
-                      background: notif.isRead ? 'transparent' : 'rgba(244, 194, 215, 0.05)',
-                      opacity: notif.isRead ? 0.55 : 1
-                    }}
-                  >
-                    <div style={S.notifInfo}>
-                      <span style={S.notifText}>{notif.text}</span>
-                      <span style={S.notifTime}>{getRelativeTime(notif.createdAt)}</span>
-                    </div>
-                    {!notif.isRead && <div style={S.unreadDot} />}
-                  </motion.div>
-                ))
+                <>
+                  {notifications.slice(0, visibleCount).map(notif => (
+                    <motion.div
+                      key={notif.id}
+                      onClick={() => handleNotifClick(notif)}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.28 }}
+                      whileHover={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+                      style={{
+                        ...S.notifItem,
+                        borderRight: notif.isRead ? '3px solid transparent' : '3px solid #f4c2d7',
+                        background: notif.isRead ? 'transparent' : 'rgba(244, 194, 215, 0.05)',
+                        opacity: notif.isRead ? 0.55 : 1
+                      }}
+                    >
+                      <div style={S.notifInfo}>
+                        <span style={S.notifText}>{notif.text}</span>
+                        <span style={S.notifTime}>{getRelativeTime(notif.createdAt)}</span>
+                      </div>
+                      {!notif.isRead && <div style={S.unreadDot} />}
+                    </motion.div>
+                  ))}
+
+                  {/* See Previous Button */}
+                  {visibleCount < notifications.length && (
+                    <motion.button
+                      onClick={() => setVisibleCount(c => c + 5)}
+                      whileHover={{ color: 'rgba(168,200,248,0.9)', backgroundColor: 'rgba(90,150,240,0.07)' }}
+                      style={S.seeMoreBtn}
+                    >
+                      عرض الإشعارات السابقة
+                    </motion.button>
+                  )}
+                </>
               )}
             </div>
             {/* Soft decorative bottom fade */}
@@ -204,6 +221,17 @@ const S = {
     color: 'rgba(168, 200, 248, 0.5)',
     fontFamily: `'Scheherazade New', 'Arial', serif`,
     fontSize: '1.3rem'
+  },
+  seeMoreBtn: {
+    width: '100%', padding: '12px 20px',
+    background: 'transparent', border: 'none',
+    borderTop: '1px solid rgba(168,200,248,0.08)',
+    color: 'rgba(168,200,248,0.45)',
+    fontFamily: `'Scheherazade New', 'Arial', serif`,
+    fontSize: '1rem', cursor: 'pointer',
+    letterSpacing: '0.04em', direction: 'rtl',
+    transition: 'color 0.2s, background 0.2s',
+    outline: 'none', WebkitTapHighlightColor: 'transparent',
   },
   bottomFade: {
     position: 'absolute', bottom: 0, left: 0, right: 0, height: '20px',
