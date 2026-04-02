@@ -26,7 +26,7 @@ export const messages = [
   text: "ذاكري و اهتمي بدراستك",
   media: [],
   createdAt: Date.now()
-}
+},
   { 
     id: "msg-013",
     title: "My Memory Box",
