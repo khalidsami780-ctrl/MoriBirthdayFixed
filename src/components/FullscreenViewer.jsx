@@ -162,7 +162,7 @@ export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, on
           {item.type === 'link' && <span style={LB.videoBadge}>🔗 خارجي</span>}
           {item.type === 'audio' && <span style={LB.videoBadge}>🎵 صوت</span>}
           
-          <p style={LB.caption}>{item.title || "مُرفق مع الرسالة 💙"}</p>
+          <p style={LB.caption}>{item.caption || item.title || "مُرفق مع الرسالة 💙"}</p>
           <p style={LB.counter}>{currentIndex + 1} / {mediaItems.length}</p>
         </div>
       </motion.div>

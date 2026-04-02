@@ -20,11 +20,48 @@ Notes:
 */
 
 export const messages = [
+  { 
+    id: "msg-013",
+    title: "My Memory Box",
+    text: `بصي بقى انا عامل بوكس كدا، بس هو مش مجرد بوكس وخلاص لا، ده فيه حتت مني انا بجد، حاجات يمكن صغيرة بس كل حاجة فيهم ليها معنى عندي.
 
+كل تفصيلة جواه ليها حكاية، ذكرى، موقف، احساس عدى عليا وساب اثر، وانا بعمله كنت طول الوقت بتخيل اليوم اللي هقعد فيه معاكي وافتحه قدامك واحدة واحدة واحكيلك على كل حاجة فيه.
+
+البوكس ده مرتبط بيا انا، بطريقتي، بحاجات محدش يشوفها غير لما يقرب بجد، وكنت دايما بتخيلك وانتي قاعدة قدامي بتسمعي وبتفهمي وبتضحكي على الحاجات الصغيرة اللي يمكن متبقاش مهمة لحد غيري.
+
+وعندي يقين و مؤمن ان اليوم ده هييجي بإذن الله، اليوم اللي نقعد فيه سوا وكل حاجة تبقى ابسط واجمل لمجرد انك موجودة. 
+
+مش مستعجل بس متأكد، ربنا هيجمعنا في وقت يكون هو الصح لينا.
+
+لحد ما ده يحصل، البوكس مستني، وانا كمان.
+😊🥺💙💙💙
+Love U Mori`,
+    media: [{type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775134256/MyMemoryBox_dz9omy.jpg" , caption: "My memory box , That I will share with U oneday ISA 🥺" }],
+    createdAt: Date.now()
+  },
+  
+  {
+    id: "msg-012",
+    title: "الشنطة   وصلت",
+    text: `الشنطة وصلت يا مريومتي 💙 
+    و ذي ماانت عارفة دودو بيحب يشاركك كل لحظاته االجميلة \n 
+    الشنطة جميلة اوي وحلوة يا مريم 😊 \n 
+     و اتمنى اان يومك كان سعيدامبارح و التهااردة و كل يوم   
+     يا قدري و نصيبي و فرحتي و ضحكتي و كل حااجة حلوة فى حياتي   
+     بحبك يا مريومتي  💙`,
+    media: [
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775134258/Unboxing_w8oq7b.jpg" , caption: "الشنطة   وصلت" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775134252/Bag6_k2kiuc.jpg" , caption: "الشنطة   وصلت" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775134257/SafrCodeDetails_pexvno.jpg" , caption: "Saf Code Details  دا لو الشنطة لقدر الله ضاعت" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775134258/safeCode_cv7f9g.jpg" , caption: "qr code (For the safe code)" },
+      
+    ],
+    createdAt: new Date("2026-04-02").getTime()
+  },
   {
     id: "msg-011",
     title: "سيبت الشغل😊",
-    text: `قدمت ااستقالتي امبارح و مشيت و حااسس براحة نفسية الى حد ماا دلوقت \n 
+    text: `قدمت استقالتي امبارح و مشيت و حااسس براحة نفسية الى حد ماا دلوقت \n 
     و هبدأ اخطط وأركز فى اللي جي دعواتك يا اانسة مريم 
      واالحمد لله متيقن ان كدا كدا بتدعيلي 
      الميد الااسبوع اللي جي ان شاء الله 

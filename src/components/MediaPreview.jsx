@@ -79,6 +79,7 @@ function PreviewThumbnail({ item }) {
           )}
         </div>
       </div>
+
     </div>
   )
 }
@@ -225,5 +226,24 @@ const S = {
     alignItems: 'center', justifyContent: 'center', background: 'rgba(180, 100, 150, 0.15)'
   },
   icon: { fontSize: '2.5rem', marginBottom: '0.6rem' },
-  linkText: { color: 'var(--blue-200)', fontSize: '0.9rem', fontWeight: 'bold', fontFamily:`'Scheherazade New', 'Arial', serif` }
+  linkText: { color: 'var(--blue-200)', fontSize: '0.9rem', fontWeight: 'bold', fontFamily:`'Scheherazade New', 'Arial', serif` },
+  captionStrip: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: '6px 10px 8px',
+    background: 'linear-gradient(to top, rgba(2,6,20,0.88) 0%, rgba(2,6,20,0.0) 100%)',
+    backdropFilter: 'blur(2px)',
+    pointerEvents: 'none',
+    zIndex: 5,
+  },
+  captionText: {
+    display: 'block',
+    fontFamily: `'Scheherazade New', 'Arial', serif`,
+    fontSize: '0.72rem',
+    color: 'rgba(210,230,255,0.85)',
+    letterSpacing: '0.02em',
+    direction: 'rtl',
+    textAlign: 'right',
+    lineHeight: 1.5,
+    textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+  }
 }
