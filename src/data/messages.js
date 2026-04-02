@@ -20,6 +20,13 @@ Notes:
 */
 
 export const messages = [
+  {
+  id: "msg-014",
+  title: "المذاكرة و الامتحاانات اكيد قربت ",
+  text: "ذاكري و اهتمي بدراستك",
+  media: [],
+  createdAt: Date.now()
+}
   { 
     id: "msg-013",
     title: "My Memory Box",
