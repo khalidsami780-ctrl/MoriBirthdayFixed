@@ -20,15 +20,9 @@ Notes:
 */
 
 export const messages = [
-  {
-  id: "msg-014",
-  title: "المذاكرة و الامتحاانات اكيد قربت ",
-  text: "ذاكري و اهتمي بدراستك",
-  media: [],
-  createdAt: Date.now()
-},
+ 
 {
-    id: "msg-support-mori",
+    id: "msg-022",
     title: "أنا جنبك 💙",
     text: `موري…
 مش عارف ليه حاسس إن جواكي حاجة مزعلاكي، حتى لو بتقولي إنك كويسة…
@@ -47,21 +41,21 @@ export const messages = [
 أنا هنا يا حبيبتي…
 ولو احتجتيني، حتى من غير ما تقولي، دودو جنبك 💙`,
     media: [],
-    createdAt: Date.now() + 10000
+    createdAt: new Date("2026-04-04").getTime() 
   },
   {
     id: "msg-021",
     title: "دعوة فجر",
     text: `مع كل فجر جديد، في دعوة ليكِ بظهر الغيب.. إن ربنا يريح بالك ويشيل عنك أي حمل. خليكي قوية يا موري، واحنا سوا بطريقة ما.`,
     media: [{ type: "image", url: "/assets/messages/msg021.png" }],
-    createdAt: Date.now() + 7000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-020",
     title: "أمانك عندي 💙",
     text: `كل اللي بتمناه إن ربنا يبارك في حياتك ويسعدك، ويجمعنا دايماً في الخير بطريقة ترضيه. أمانك وسعادتك هما اللي يهمني فوق أي حاجة.. زي ما الأغنية دي فيها شموخ وقدر، بدعيلك بكل خير.`,
     media: [{ type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620427/%D9%88%D9%84%D9%82%D8%AF_%D8%B0%D9%83%D8%B1%D8%AA%D9%83_%D9%88%D8%A7%D9%84%D8%B1%D9%85%D8%A7%D8%AD_%D9%86%D9%88%D8%A7%D9%87%D9%84_%D9%85%D9%86%D9%8A_e2c9rq.mp3" }],
-    createdAt: Date.now() + 6000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-019",
@@ -70,42 +64,42 @@ export const messages = [
     media: [
       { type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620440/Every_time_I_come_to_you_hi4pom.mp3" }
     ],
-    createdAt: Date.now() + 5000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-018",
     title: "انتي عندي بالدنيا",
     text: `انتي بالنسبة لي دايمًا في المرتبة الأولى.. هدوئك وراحتك أهم من أي كلام. خدي وقتك يا مريم، ومكانك في قلبي دايمًا محفوظ بكل ود واحترام.. "أنت الحب" كله.`,
     media: [{ type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620429/anta-el-hob_pa2zwf.mp3" }],
-    createdAt: Date.now() + 4000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-017",
     title: "كوني أنتي 💙",
     text: `لأني شايفك أجمل حد في الدنيا زي ما أنتي.. مش محتاجة تتغيري عشان حد. كوني أنتي يا مريم، وده كفاية أوي عشان قلبي يفضل يقدرك ويحترمك بكل هدوء.. "العيون دي" مشوفتش زيها.`,
     media: [{ type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620432/el-oyoun-di_szfwoa.mp3" }],
-    createdAt: Date.now() + 3000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-016",
     title: "سكينة لقلبك",
     text: `خلي قلبك دايمًا متعلق بالسكينة.. السما دي واسعة أوي، وكرم ربنا أوسع. حبيت بس أطمن عليكي من بعيد لبعيد، وأبعتلك الصوت الهادي ده "بدون موسيقى" يونسك في هدوئك.`,
     media: [{ type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620447/%D8%B9%D8%A8%D8%AF%D8%A7%D9%84%D8%B1%D8%AD%D9%85%D9%86_%D9%85%D8%AD%D9%85%D8%AF_%D8%A8%D9%90%D8%B1%D9%88%D8%AD%D9%8A_%D9%81%D9%8E%D8%AA%D8%A7%D8%A9%D9%8C_%D9%85%D8%B9_%D8%A7%D9%84%D9%83%D9%84%D9%85%D8%A7%D8%AA_%D8%A8%D8%AF%D9%88%D9%86_%D9%85%D9%88%D8%B3%D9%8A%D9%82%D9%89_M4A_128K_h6lmnj.m4a" }],
-    createdAt: Date.now() + 2000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-015",
     title: "فرحة قريبة",
     text: `إن شاء الله كل حاجة هتبقى أحسن.. لو حاسة بضيق دلوقتي، افتكري إن ربنا دايمًا بيفتح أبوابه، وبإذن الله "بشرانا اليوم" وكل يوم بالخير والراحة لقلبك.`,
     media: [{ type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620431/boshrak-elyoum_j55uq1.mp3" }],
-    createdAt: Date.now() + 1000
+    createdAt: new Date("2026-04-04").getTime()
   },
   {
     id: "msg-014",
     title: "لآخر العمر 💙",
     text: `زي ما الأغنية دي بتقول.. "سيرة الحب" بينا بتبدأ بقرار إننا نفضل جنب بعض في كل الحالات. هفضل ممتن لوجودك في حياتي، حتى لو في صمت. المهم عندي إنك تكوني بخير.`,
     media: [{ type: "audio", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620470/siret-el-hob_gv2bhs.m4a" }],
-    createdAt: Date.now()
+    createdAt: new Date("2026-04-04").getTime()
   },
 
   { 
@@ -125,7 +119,7 @@ export const messages = [
 😊🥺💙💙💙
 Love U Mori`,
     media: [{type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775134256/MyMemoryBox_dz9omy.jpg" , caption: "My memory box , That I will share with U oneday ISA 🥺" }],
-    createdAt: Date.now()
+    createdAt: new Date("2026-04-02").getTime()
   },
   
   {
