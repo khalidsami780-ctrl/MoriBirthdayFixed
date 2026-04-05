@@ -28,7 +28,7 @@ export const messages = [
   كنت بصلي الفجر النهاردة وانا بدعيلك كنت زعلان عليكي والله لدرجة اني عيطت وانا بدعيلك 
   طمنيني عليكي `,
   media: [],
-  createdAt: Date.now()
+  createdAt: new Date("2026-04-05").getTime()
 },
 {
     id: "msg-022",
