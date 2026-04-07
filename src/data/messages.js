@@ -20,6 +20,14 @@ Notes:
 */
 
 export const messages = [
+  
+  {
+    id: "msg-027",
+    title: "peace",
+    text: `لما ببقى تعبان  دائما بحب اسمع  قراّن بحب العادة دي فيا اوي وبطمن `,
+    media: [{type:"video", url:"https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775597359/Qura_n_tjxtul.mp4", caption:"قرآن بصوت  الشيخ محمد صديق المنشاوي "}],
+    createdAt: new Date("2026-04-08").getTime()
+  },
 
   {
   id: "msg-026",
