@@ -22,6 +22,77 @@ Notes:
 export const messages = [
   
   {
+    id: "msg-030",
+    title: "حبي لكي دائم 💙",
+    text: `سأبقى معكي ، بجانبك ، سندك ، و بجانبك دائماً 
+    أخاف و أهتم بك ، سأبقى روحا لا تفارقك ، لن أتخلى عنك يوما مهما طال الزمان او ابتعدت المسافة 
+    سأبقى أحبك ، و سأبقى أحبك ، و سأبقى أحبك 
+    فقد أخبرتك منذ عرفتك أنني أحببت الحياة لأجلك 
+    و سأبقى على وعدي 
+    أحبك دائماً و أبداً 
+    حتى تغلق أجفاني و أغادر هذا  العالم .`,
+    media: [
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775655668/L2_cfjsfq.mp4", caption: "يا أجمل حاجة شافتها عيني.. أحبك دائماً وأبداً 💙" }
+    ],
+    createdAt: new Date("2026-04-08").getTime()
+  },
+
+  {
+    id: "msg-029",
+    title: "عهد الوفاء واللقاء المنتظر 💙",
+    text: `موري، يا قدري الجميل ونبض قلبي.. 
+    أدعو الله في كل سجدة أن يكتب لنا اللقاء الجميل، وأن يجمعنا في خير وعلى خير. 
+    أنتِ الدعوة التي بدأت بها صلاتي، والفرحة التي تملأ حياتي.
+    
+    يقول عنترة بن شداد في غزل العفيف:
+    "يا عبلَ إنّ هواكِ قد جازَ المدى ... وأنا المـُعنّى فيكِ يـومَ المشهدِ"
+    
+    وقوله الذي يخلد الشوق:
+    "ولقد ذكرتك والرماح نواهلُ مني وبيض الهند تقطر من دمي
+    فوددت تقبيل السيوف لأنها لمعت كبارق ثغرك المتبسم"
+    
+    ستظلين دائمًا وأبدًا في قلبي، ملكة متوجة، وحلمًا أسعى لتحقيقه بكل ما أوتيت من قوة.
+    بحبك يا مريومتي 💙`,
+    media: [
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655677/LoveU_p7jvit.jpg", caption: "دودو وموري.. قلوبنا سوا 💙" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655677/U_fjrrph.jpg", caption: "نفسي في لحظة تجمعني بيكي وبأهلك.. يا رب 🥺" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655677/Allahum_stcc9a.jpg", caption: "اللهم بارك لنا واجمع بيننا في خير 🤲" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655677/UrFav_rpjhmk.jpg", caption: "حتى الورد بيغير من جمالك يا وردتي 🌹" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655678/Ameen_ttgxxj.jpg", caption: "آمين يا رب العالمين.. استجب لنا 🙌" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655678/Forever_hmo4jg.jpg", caption: "إيد في إيد.. لآخر العمر إن شاء الله 💍" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655678/foru_invmhi.jpg", caption: "حبنا ملهوش نهاية.. بصمة قلبي ليكي للأبد ∞" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655678/ILoveUForEverMori_d3my2u.jpg", caption: "كنتي أول دعوة في سجودي.. وأول فرحة لقلبي 🥺💙" }
+    ],
+    createdAt: new Date("2026-04-08").getTime()
+  },
+
+  {
+    id: "msg-028",
+    title: "أراكِ في كل شيء جميل 💙",
+    text: `يا مريم، يا من سكنتِ الفؤاد وتربّعتِ على عرش الروح.. 
+    أكتبُ لكِ وفي كل حرفٍ نبضةٌ تنطق باسمك. أنتِ لي الدنيا وما فيها، وأنتِ القمر الذي يضيء عتمة أيامي.
+    أراكِ في كل شيء حولنا، في رقة الورود، في جمال الطبيعة، وحتى في هدوء الليل.
+    
+    يقول امرؤ القيس في وصف المحبوبة:
+    "أغَرّكِ منّي أنّ حُبّكِ قاتِلي ... وأنّكِ مَهْمَا تَأْمُري القَلْبَ يَفْعَلِ"
+    
+    يا مريومتي، حبك هو النبض الذي يحييني، والأمل الذي يدفعني للأمام.
+    سأبقى دائمًا بجانبك، سندك وروحك التي لا تفارقك.
+    أحبكِ فوق الحب حبّاً.. 💙`,
+    media: [
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775655650/U2_juuuzh.mp4", caption: "قولي اللي في قلبك.. أنا كلي سمع ليكي يا حبيبتي 💙" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775655652/Mori_tg9ok3.mp4", caption: "بتحب القطط.. وأنا بحبها هي وبحب كل حاجة بتحبها 🐱💙" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/v1775655660/L1_mqyikr.mp4", caption: "بنحب بعض أكتر وأكتر.. قد ما نقدر 💙" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775655668/L2_cfjsfq.mp4", caption: "يا أجمل حاجة شافتها عيني في الدنيا دي كلها ✨" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775655669/U_kkrxio.mp4", caption: "أنا ميت فيكي.. وعايش بس بوجودك جنبي 💙" },
+      { type: "video", url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775655675/MissUYaMori_tk4zra.mp4", caption: "وحشتيني يا موري.. وحشتي قلبي وعيني 🥺💙" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655676/ISA_igbz0k.jpg", caption: "طالبين قمر ينور سمانا.. وإنتي القمر اللي ملوش زي 🌕💙" },
+      { type: "image", url: "https://res.cloudinary.com/djdktudjh/image/upload/q_auto/f_auto/v1775655677/MyFLower_zalpve.jpg", caption: "وردتي الجميلة النادرة.. M+K للأبد 🌸💙" }
+    ],
+    createdAt: new Date("2026-04-08").getTime()
+  },
+
+  {
     id: "msg-027",
     title: "peace",
     text: `لما ببقى تعبان  دائما بحب اسمع  قراّن بحب العادة دي فيا اوي وبطمن `,
