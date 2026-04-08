@@ -2,7 +2,6 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import NavDots         from '../components/NavDots.jsx'
 import IntroGate       from '../components/IntroGate.jsx'
-import MusicButton     from '../components/MusicButton.jsx'
 import WorldSwitcher   from '../shared/WorldSwitcher.jsx'
 import PdfSection      from '../sections/PdfSection.jsx'
 import WelcomeSection  from '../sections/WelcomeSection.jsx'
@@ -74,7 +73,6 @@ export default function BirthdayPage() {
           >
             <div className="noise-overlay" aria-hidden="true" />
             <WorldSwitcher />
-            <MusicButton />
             <NavDots active={activeSection} scrollTo={scrollTo} />
 
             <main ref={scrollContainerRef} className="scroll-container" role="main">

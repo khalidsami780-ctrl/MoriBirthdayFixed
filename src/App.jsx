@@ -5,6 +5,7 @@ import { analytics, db } from './firebase.js'
 import { logEvent } from 'firebase/analytics'
 import { collection, addDoc } from 'firebase/firestore'
 import GlobalToast from './components/GlobalToast.jsx'
+import FloatingMusicPlayer from './components/FloatingMusicPlayer.jsx'
 
 /* ── Code splitting: each page loads only when navigated to ── */
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
@@ -114,6 +115,7 @@ export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <GlobalToast />
+      <FloatingMusicPlayer />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/"          element={<Navigate to="/birthday" replace />} />
