@@ -7,6 +7,7 @@ import { collection, addDoc } from 'firebase/firestore'
 import GlobalToast from './components/GlobalToast.jsx'
 import FloatingMusicPlayer from './components/FloatingMusicPlayer.jsx'
 import RandomLoveToast from './components/RandomLoveToast.jsx'
+import SafeBox from './components/SafeBox.jsx'
 
 /* ── Code splitting: each page loads only when navigated to ── */
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
@@ -115,6 +116,7 @@ export default function App() {
     <Suspense fallback={<PageLoader />}>
       <GlobalToast />
       <RandomLoveToast />
+      <SafeBox />
       <FloatingMusicPlayer />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
