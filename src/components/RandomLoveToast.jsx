@@ -12,10 +12,10 @@ export default function RandomLoveToast() {
       showRandomMessage()
     }, 2000);
     
-    // 2. Start the interval loop (every 90 seconds)
+    // 2. Start the interval loop (Randomized between 1 to 3 minutes)
     let loopTimeoutId;
     const loop = () => {
-       const nextInterval = 90000; // 90 seconds flat
+       const nextInterval = Math.floor(Math.random() * (180000 - 60000 + 1)) + 60000;
        
        loopTimeoutId = setTimeout(() => {
           showRandomMessage();
