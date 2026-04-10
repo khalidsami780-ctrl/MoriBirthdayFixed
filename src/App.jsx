@@ -11,8 +11,6 @@ import FloatingMusicPlayer from './components/FloatingMusicPlayer.jsx'
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
 const EidPage       = lazy(() => import('./pages/EidPage.jsx'))
 const MessagesPage  = lazy(() => import('./pages/MessagesPage.jsx'))
-const Admin         = lazy(() => import('./pages/Admin.jsx'))
-
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
   return (
@@ -122,7 +120,6 @@ export default function App() {
           <Route path="/birthday"  element={<BirthdayPage />} />
           <Route path="/eid"       element={<EidPage />} />
           <Route path="/messages"  element={<MessagesPage />} />
-          <Route path="/kh-hidden-analytics-7x9q" element={<Admin />} />
           <Route path="*"          element={<Navigate to="/birthday" replace />} />
         </Routes>
       </AnimatePresence>
