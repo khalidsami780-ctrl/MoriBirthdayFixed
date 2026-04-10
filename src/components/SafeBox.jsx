@@ -1,21 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
 import { moodDatabase } from '../data/moodMessages.js'
 
 export default function SafeBox() {
-  const navigate = useNavigate()
+  const [isOpen, setIsOpen] = useState(false)
   const [stage, setStage] = useState('mood_selection') // 'mood_selection' | 'message' | 'smile' | 'venting'
   const [activeMessage, setActiveMessage] = useState('')
   const [ventMessage, setVentMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  useEffect(() => {
+    const handleOpenReq = () => {
+      setStage('mood_selection')
+      setIsOpen(true)
+    }
+    window.addEventListener('open-safebox', handleOpenReq)
+    return () => window.removeEventListener('open-safebox', handleOpenReq)
+  }, [])
+
   const handleComfortedClick = () => {
     setStage('smile')
     setTimeout(() => {
+      setIsOpen(false)
       setVentMessage('') // clean up input for next time
-      navigate('/birthday')
-    }, 2800) // Show smile for approx 2.8 seconds then route away
+    }, 2800) // Show smile for approx 2.8 seconds then close modal
   }
 
   const handleVentingSubmit = async () => {
@@ -79,23 +87,26 @@ export default function SafeBox() {
   }
 
   return (
-    <motion.div 
-      style={S.overlay}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.6 }}
-      onClick={() => { if(stage !== 'smile') navigate(-1) }}
-    >
-      <motion.div 
-        style={S.modalContent}
-        onClick={e => e.stopPropagation()} // Prevent close on modal click
-        initial={{ scale: 0.9, y: 30, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        transition={{ duration: 0.5, type: 'spring', damping: 20 }}
-      >
-        <AnimatePresence mode="wait">
+    <>
+      <AnimatePresence>
+        {isOpen && (
+           <motion.div 
+             style={S.overlay}
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+             transition={{ duration: 0.8 }}
+             onClick={() => { if(stage !== 'smile') setIsOpen(false) }}
+           >
+              <motion.div 
+                style={S.modalContent}
+                onClick={e => e.stopPropagation()} // Prevent close on modal click
+                initial={{ scale: 0.9, y: 50, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 50, opacity: 0 }}
+                transition={{ duration: 0.6, type: 'spring', damping: 20 }}
+              >
+                  <AnimatePresence mode="wait">
                     
                     {/* STAGE 1: Mood Selection */}
                     {stage === 'mood_selection' && (
@@ -289,9 +300,12 @@ export default function SafeBox() {
                       </motion.div>
                     )}
 
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
+                  </AnimatePresence>
+              </motion.div>
+           </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 

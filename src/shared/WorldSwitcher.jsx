@@ -181,7 +181,13 @@ export default function WorldSwitcher() {
             <motion.button
               key={tab.path}
               style={{...S.tab,color:isActive?'#f0e8dc':'rgba(220,235,255,0.75)'}}
-              onClick={()=>navigate(tab.path)}
+              onClick={()=>{
+                if (tab.path === '/safebox') {
+                  window.dispatchEvent(new Event('open-safebox'))
+                } else {
+                  navigate(tab.path)
+                }
+              }}
               whileTap={{scale:0.95}}
               aria-label={tab.label}
               aria-current={isActive?'page':undefined}
