@@ -35,7 +35,9 @@ export default function NotificationBell() {
   const handleNotifClick = (notif) => {
     if (!notif.isRead) markAsRead(notif.id)
     setIsOpen(false)
-    navigate(notif.route, { state: { scrollTarget: notif.targetId, tab: notif.tab } })
+    if (notif.route) {
+        navigate(notif.route, { state: { scrollTarget: notif.targetId, tab: notif.tab } })
+    }
   }
 
   return (

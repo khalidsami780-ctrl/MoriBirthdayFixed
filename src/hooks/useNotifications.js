@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { messages } from '../data/messages.js'
 import { tips } from '../data/tips.js'
+import { playlist } from '../data/playlist.js'
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState([])
@@ -11,7 +12,8 @@ export function useNotifications() {
     // 1. Map raw static arrays
     const rawData = [
       ...messages.map(m => ({ ...m, notifType: 'message' })),
-      ...tips.map(t => ({ ...t, notifType: 'tip' }))
+      ...tips.map(t => ({ ...t, notifType: 'tip' })),
+      ...playlist.filter(p => p.createdAt).map(p => ({ ...p, notifType: 'song' }))
     ]
 
     const now = Date.now()
@@ -28,17 +30,41 @@ export function useNotifications() {
     // 3. Filter expiring nodes > 30 Days and Map state
     const activeNotifs = rawData
       .filter(item => now <= (item.createdAt + THIRTY_DAYS_MS))
-      .map(item => ({
-        id: item.id,
-        type: item.notifType,
-        text: item.notifType === 'message' ? "رسالة جديدة لكِ 💙: " + (item.title || "مفاجأة 🌸") : "نصيحة جديدة لكِ 🌸: " + (item.title || "مفاجأة 💙"),
-        createdAt: item.createdAt,
-        expiresAt: item.createdAt + THIRTY_DAYS_MS,
-        isRead: storedRead.includes(item.id),
-        route: '/messages', // Quick tap destination for both types
-        targetId: item.notifType === 'message' ? `message-${item.id}` : `tip-${item.id}`,
-        tab: item.notifType === 'message' ? 'messages' : 'advice'
-      }))
+      .map(item => {
+        let text = "";
+        let route = null;
+        let targetId = null;
+        let tab = null;
+
+        if (item.notifType === 'message') {
+           text = "رسالة جديدة لكِ 💙: " + (item.title || "مفاجأة 🌸");
+           route = '/messages';
+           targetId = `message-${item.id}`;
+           tab = 'messages';
+        } else if (item.notifType === 'tip') {
+           text = "نصيحة جديدة لكِ 🌸: " + (item.title || "مفاجأة 💙");
+           route = '/messages';
+           targetId = `tip-${item.id}`;
+           tab = 'advice';
+        } else if (item.notifType === 'song') {
+           text = "🎶 دودو ضاف أغنية جديدة عشان تسمعيها! (" + item.title + ")";
+           route = null;
+        }
+
+        const uniqueId = item.notifType === 'song' ? `song-${item.id}` : item.id;
+
+        return {
+          id: uniqueId,
+          type: item.notifType,
+          text: text,
+          createdAt: item.createdAt,
+          expiresAt: item.createdAt + THIRTY_DAYS_MS,
+          isRead: storedRead.includes(uniqueId),
+          route: route,
+          targetId: targetId,
+          tab: tab
+        }
+      })
       .sort((a, b) => b.createdAt - a.createdAt) // Newest Top
 
     setNotifications(activeNotifs)

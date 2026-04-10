@@ -118,5 +118,26 @@ export const playlist = [
     title: "لا حد بعدك يملأ عيوني",
     artist: "ميادة الحناوي",
     url: "https://res.cloudinary.com/djdktudjh/video/upload/v1774620421/%D9%84%D8%A7_%D8%AD%D8%AF_%D8%A8%D8%B9%D8%AF%D9%83_%D9%8A%D9%85%D9%84%D8%A6_%D8%B9%D9%8A%D9%88%D9%86%D9%8A_up7tq9.mp3"
+  },
+  {
+    id: 21,
+    title: "يوم ما اتقابلنا",
+    artist: "عمرو دياب",
+    url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775829905/Amr_Diab_Youm_Matabelna_wup2ik.wav",
+    createdAt: new Date("2026-04-10").getTime()
+  },
+  {
+    id: 22,
+    title: "حلف القمر",
+    artist: "جورج وسوف",
+    url: "https://res.cloudinary.com/djdktudjh/video/upload/%D8%AD%D9%84%D9%81_%D8%A7%D9%84%D9%82%D9%85%D8%B1-_%D8%AC%D9%88%D8%B1%D8%AC_%D9%88%D8%B3%D9%88%D9%81_gfdl1e.wav",
+    createdAt: new Date("2026-04-10").getTime()
+  },
+  {
+    id: 23,
+    title: "خايف على مريم",
+    artist: "خايف على مريم",
+    url: "https://res.cloudinary.com/djdktudjh/video/upload/%D8%AE%D8%A7%D9%8A%D9%81_%D8%B9%D9%84%D9%89_%D9%85%D8%B1%D9%8A%D9%85_tibsbg.wav",
+    createdAt: new Date("2026-04-10").getTime()
   }
 ];

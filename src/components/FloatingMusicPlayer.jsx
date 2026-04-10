@@ -61,6 +61,24 @@ export default function FloatingMusicPlayer() {
     setCurrentTrackIndex((prev) => (prev - 1 + playlist.length) % playlist.length)
   }
 
+  const handleDownloadTrack = (e, track) => {
+    e.stopPropagation();
+    let downloadUrl = track.url;
+    // Inject fl_attachment to force download rather than browser-playback for Cloudinary assets
+    if (downloadUrl.includes("upload/")) {
+      const parts = downloadUrl.split("upload/");
+      downloadUrl = `${parts[0]}upload/fl_attachment/${parts[1]}`;
+    }
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `${track.title} - ${track.artist}`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleSeek = (e) => {
     const seekTime = (e.target.value / 100) * audioRef.current.duration
     audioRef.current.currentTime = seekTime
@@ -178,7 +196,18 @@ export default function FloatingMusicPlayer() {
                         <span style={{ ...S.itemTitle, color: currentTrackIndex === idx ? '#5b9cf6' : '#f0e8dc' }}>
                           {track.title}
                         </span>
-                        {currentTrackIndex === idx && isPlaying && <EqualizerSmall />}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {currentTrackIndex === idx && isPlaying && <EqualizerSmall />}
+                          <motion.button 
+                            onClick={(e) => handleDownloadTrack(e, track)} 
+                            whileHover={{ scale: 1.15, color: '#5b9cf6' }}
+                            whileTap={{ scale: 0.9 }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', WebkitTapHighlightColor: 'transparent', color: 'rgba(168,200,248,0.5)' }}
+                            title="تنزيل الأغنية"
+                          >
+                            <DownloadIcon size={16} />
+                          </motion.button>
+                        </div>
                       </motion.div>
                     ))}
                   </motion.div>
@@ -268,6 +297,7 @@ const PrevIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="cu
 const NextIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2"></line></svg>);
 const VolIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2V15H6L11 19V5Z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>);
 const MuteIcon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2V15H6L11 19V5Z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>);
+const DownloadIcon = ({ size }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>);
 
 const EqualizerSmall = () => (
   <div style={{ display:'flex', gap:2, alignItems:'flex-end', height:10, marginLeft: 8 }}>
