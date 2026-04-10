@@ -54,11 +54,13 @@ export default function FloatingMusicPlayer() {
   const handleNext = useCallback((e) => {
     if (e) e.stopPropagation()
     setCurrentTrackIndex((prev) => (prev + 1) % playlist.length)
+    setIsPlaying(true)
   }, [])
 
   const handlePrev = (e) => {
     if (e) e.stopPropagation()
     setCurrentTrackIndex((prev) => (prev - 1 + playlist.length) % playlist.length)
+    setIsPlaying(true)
   }
 
   const handleDownloadTrack = (e, track) => {
@@ -111,7 +113,10 @@ export default function FloatingMusicPlayer() {
         onWaiting={() => setIsLoading(true)}
         onCanPlay={() => setIsLoading(false)}
         onPlay={() => { setIsPlaying(true); setIsLoading(false); }}
-        onPause={() => setIsPlaying(false)}
+        onPause={(e) => { 
+          if (e.target.currentTime >= e.target.duration - 0.5) return;
+          setIsPlaying(false)
+        }}
         preload="auto"
       />
 
