@@ -1,15 +1,64 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { moodDatabase } from '../data/moodMessages.js'
 
 export default function SafeBox() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [stage, setStage] = useState('mood_selection') // 'mood_selection' | 'message' | 'smile'
+  const navigate = useNavigate()
+  const [stage, setStage] = useState('mood_selection') // 'mood_selection' | 'message' | 'smile' | 'venting'
   const [activeMessage, setActiveMessage] = useState('')
+  const [ventMessage, setVentMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleOpen = () => {
-    setStage('mood_selection')
-    setIsOpen(true)
+  const handleComfortedClick = () => {
+    setStage('smile')
+    setTimeout(() => {
+      setVentMessage('') // clean up input for next time
+      navigate('/birthday')
+    }, 2800) // Show smile for approx 2.8 seconds then route away
+  }
+
+  const handleVentingSubmit = async () => {
+    if(!ventMessage.trim()) return;
+    setIsSubmitting(true);
+    
+    const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AAGtCOV-QhKjgZxR4XqimtmjyKvtFpcuso8";
+    const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
+    
+    // Construct the text payload sent to Telegram
+    const timestampDate = new Date().toLocaleString('ar-EG');
+    const text = `🚨 خطاب من صندوق الطمأنينة (SafeBox)\n🕚 الوقت: ${timestampDate}\n\nرسالة مريومتي:\n" ${ventMessage.trim()} "`;
+    
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: text })
+      });
+      
+      if (!res.ok) throw new Error("API responded with an error");
+
+      // Save restriction timestamp ONLY if fetch succeeded & telegram accepted it
+      localStorage.setItem('last_safebox_vent', Date.now().toString());
+      handleComfortedClick(); 
+    } catch (e) {
+      console.error("Failed to send telegram message", e)
+      // We will pretend it succeeded so she doesn't panic, but don't restrict her from retrying later
+      handleComfortedClick();
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Calculate if she has permission to use the venting feature (Once every 7 days)
+  let canVent = true;
+  const lastVentStr = localStorage.getItem('last_safebox_vent');
+  if(lastVentStr) {
+     const lastVent = Number(lastVentStr);
+     const diff = Date.now() - lastVent;
+     if(diff < 7 * 24 * 60 * 60 * 1000) {
+        canVent = false; // Restrict because less than 7 days have passed
+     }
   }
 
   const handleMoodSelect = (moodKey) => {
@@ -17,13 +66,6 @@ export default function SafeBox() {
     const randomIdx = Math.floor(Math.random() * messages.length)
     setActiveMessage(messages[randomIdx])
     setStage('message')
-  }
-
-  const handleComfortedClick = () => {
-    setStage('smile')
-    setTimeout(() => {
-      setIsOpen(false)
-    }, 2800) // Show smile for approx 2.8 seconds then close modal
   }
 
   const renderMessageText = (text) => {
@@ -37,38 +79,23 @@ export default function SafeBox() {
   }
 
   return (
-    <>
-      {/* Floating Button - Safely at TOP-LEFT */}
-      <motion.button 
-        style={S.fab} 
-        onClick={handleOpen}
-        whileHover={{ scale: 1.1, boxShadow: '0 8px 25px rgba(244, 194, 215, 0.6)' }}
-        whileTap={{ scale: 0.9 }}
-        title="صندوق الطمأنينة"
+    <motion.div 
+      style={S.overlay}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6 }}
+      onClick={() => { if(stage !== 'smile') navigate(-1) }}
+    >
+      <motion.div 
+        style={S.modalContent}
+        onClick={e => e.stopPropagation()} // Prevent close on modal click
+        initial={{ scale: 0.9, y: 30, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.9, y: 20, opacity: 0 }}
+        transition={{ duration: 0.5, type: 'spring', damping: 20 }}
       >
-        <span style={S.fabIcon}>❤️‍🩹</span>
-      </motion.button>
-
-      {/* Relaxing Full-Screen Modal */}
-      <AnimatePresence>
-        {isOpen && (
-           <motion.div 
-             style={S.overlay}
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-             transition={{ duration: 0.8 }}
-             onClick={() => { if(stage !== 'smile') setIsOpen(false) }}
-           >
-              <motion.div 
-                style={S.modalContent}
-                onClick={e => e.stopPropagation()} // Prevent close on modal click
-                initial={{ scale: 0.9, y: 50, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.9, y: 50, opacity: 0 }}
-                transition={{ duration: 0.6, type: 'spring', damping: 20 }}
-              >
-                  <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
                     
                     {/* STAGE 1: Mood Selection */}
                     {stage === 'mood_selection' && (
@@ -93,6 +120,17 @@ export default function SafeBox() {
                                {moodDatabase[key].label}
                              </motion.button>
                            ))}
+                           
+                           {/* The Venting Option (Exclusive Ticket) */}
+                           <motion.button
+                             key="venting"
+                             style={{ ...S.moodButton, background: 'linear-gradient(90deg, rgba(255, 235, 59, 0.08), rgba(255, 193, 7, 0.05))', border: '1px solid rgba(255, 215, 0, 0.3)' }}
+                             whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 235, 59, 0.15)' }}
+                             whileTap={{ scale: 0.95 }}
+                             onClick={() => setStage('venting')}
+                           >
+                              عايزة أفضفضلك بجد 📝
+                           </motion.button>
                          </div>
                       </motion.div>
                     )}
@@ -177,45 +215,92 @@ export default function SafeBox() {
                       </motion.div>
                     )}
 
-                  </AnimatePresence>
-              </motion.div>
-           </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+                    {/* STAGE 4: The Secret Venting Form */}
+                    {stage === 'venting' && (
+                      <motion.div
+                        key="venting-stage"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.5 }}
+                        style={S.messageContainer}
+                      >
+                         {canVent ? (
+                           <>
+                             <motion.div 
+                               initial={{ opacity: 0, y: -10 }} 
+                               animate={{ opacity: 1, y: 0 }} 
+                               transition={{ delay: 0.2 }}
+                               style={{...S.para, fontSize: '1.05rem', color: '#ffeb3b', padding: '12px 15px', background: 'rgba(255,235,59,0.05)', borderRadius: '12px', border: '1px solid rgba(255,235,59,0.2)', marginBottom: '20px', lineHeight: 1.4}}
+                             >
+                               عشان الرسالة دي غالية أوي، مسموحلك تبعتي لدودو رسالة واحدة بس كل أسبوع. وفّري الكارت بتاعك للوقت اللي تحتاجيه بجد، وهو دايماً حاسس بيكي حتى وإنتي ساكتة 💙
+                             </motion.div>
+                             
+                             <textarea 
+                               style={S.textArea} 
+                               placeholder="اكتبي كل اللي وجع قلبك أو ضاغط عليكي، دودو سامعك دلوقتي بصمت..."
+                               value={ventMessage}
+                               onChange={e => setVentMessage(e.target.value)}
+                               disabled={isSubmitting}
+                             />
+
+                             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                               <motion.button 
+                                 style={{...S.closeButton, marginTop: 0, opacity: (!ventMessage.trim() || isSubmitting) ? 0.5 : 1}} 
+                                 onClick={handleVentingSubmit}
+                                 disabled={!ventMessage.trim() || isSubmitting}
+                                 whileHover={{ scale: (!ventMessage.trim() || isSubmitting) ? 1 : 1.05, backgroundColor: 'rgba(255, 235, 59, 0.2)', color: '#fff', borderColor: 'rgba(255, 215, 0, 0.6)' }}
+                                 whileTap={{ scale: 0.95 }}
+                               >
+                                 {isSubmitting ? 'جاري وصول الرسالة لقلبه...' : 'إرسال لقلب دودو 💌'}
+                               </motion.button>
+
+                               <motion.button 
+                                 style={{...S.closeButton, marginTop: 0, background: 'transparent', borderColor: 'rgba(244, 194, 215, 0.3)', color: 'rgba(244, 194, 215, 0.8)'}} 
+                                 onClick={() => setStage('mood_selection')}
+                                 whileHover={{ scale: 1.05 }}
+                                 whileTap={{ scale: 0.95 }}
+                               >
+                                 إلغاء
+                               </motion.button>
+                             </div>
+                           </>
+                         ) : (
+                           // Restricted State UI
+                           <>
+                             <div style={{fontSize: '3.5rem', filter: 'drop-shadow(0 0 10px rgba(91, 156, 246, 0.5))', marginBottom: '15px'}}>⏳</div>
+                             <h2 style={{...S.title, fontSize:'1.6rem', marginBottom: '15px'}}>بطاقتك في حفظ قلبي 💌</h2>
+                             <p style={{...S.para, textAlign:'center'}}>
+                               يا حبيبة الروح، إنتي استخدمتي رسالتك المميزة الخاصة بالأسبوع ده. 
+                               دودو جنبك وبيدعيلك في كل وقت حتى من غير ما تكتبيله، ومتأكد إنك تقدري تعدي أي ضغط دلوقتي بثقة وإيمان..
+                               <br/><br/>
+                               هستنى رسالتك الجديدة الأسبوع الجاي 💙.
+                             </p>
+                             <motion.button 
+                               style={S.closeButton} 
+                               onClick={() => setStage('mood_selection')}
+                               whileHover={{ scale: 1.05, backgroundColor: 'rgba(91, 156, 246, 0.9)', color: '#fff' }}
+                               whileTap={{ scale: 0.95 }}
+                             >
+                               فهمت يا دودو
+                             </motion.button>
+                           </>
+                         )}
+                      </motion.div>
+                    )}
+
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   )
 }
 
 const S = {
-  fab: {
-    position: 'fixed',
-    top: '1.5rem',
-    left: '1.5rem',
-    zIndex: 99990,
-    width: '55px',
-    height: '55px',
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(8, 18, 52, 0.8), rgba(244, 194, 215, 0.15))',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(244, 194, 215, 0.3)',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    cursor: 'pointer',
-    outline: 'none',
-    padding: 0
-  },
-  fabIcon: {
-    fontSize: '24px',
-    lineHeight: 1,
-    filter: 'drop-shadow(0 0 5px rgba(244, 194, 215, 0.8))'
-  },
   overlay: {
     position: 'fixed',
     top: 0,
     left: 0,
-    width: '100%',
+    width: '100vw',
     height: '100vh',
     background: 'rgba(2, 6, 23, 0.85)',
     backdropFilter: 'blur(15px)',
@@ -356,5 +441,20 @@ const S = {
     color: '#f4c2d7',
     textShadow: '0 0 15px rgba(244, 194, 215, 0.8)',
     letterSpacing: '1px'
+  },
+  textArea: {
+    width: '100%',
+    minHeight: '140px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(244, 194, 215, 0.3)',
+    borderRadius: '16px',
+    padding: '15px',
+    color: '#f0e8dc',
+    fontFamily: `'Scheherazade New', serif`,
+    fontSize: '1.3rem',
+    outline: 'none',
+    resize: 'none',
+    boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.3)',
+    direction: 'rtl'
   }
 }

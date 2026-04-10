@@ -132,6 +132,7 @@ const TABS = [
   { path: '/birthday', label: 'عيد ميلاد موري', short: 'Birthday', icon: '🎂' },
   { path: '/eid',      label: 'عيد مع موري',    short: 'Eid',      icon: '💙', isNew: true },
   { path: '/messages', label: 'رسائل ونصائح',   short: 'رسائل',   icon: '✉️', isPulse: true },
+  { path: '/safebox',  label: 'صندوق الطمأنينة',short: 'أمان',     icon: '❤️‍🩹' },
 ]
 
 export default function WorldSwitcher() {
@@ -164,11 +165,11 @@ export default function WorldSwitcher() {
         <div style={S.pillWrapper}>
           <div style={S.pill}>
             {/* Sliding active bg */}
-            <motion.div
-          style={{
-            ...S.highlight,
-            width: `calc(${100/3}% - 3px)`,
-          }}
+          <motion.div
+            style={{
+              ...S.highlight,
+              width: `calc(${100/TABS.length}% - 3px)`,
+            }}
           animate={{ x: `${activeIdx * 100}%` }}
           transition={{type:'spring',stiffness:380,damping:32}}
         />
