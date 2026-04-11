@@ -139,5 +139,12 @@ export const playlist = [
     artist: "خايف على مريم",
     url: "https://res.cloudinary.com/djdktudjh/video/upload/%D8%AE%D8%A7%D9%8A%D9%81_%D8%B9%D9%84%D9%89_%D9%85%D8%B1%D9%8A%D9%85_tibsbg.wav",
     createdAt: new Date("2026-04-10").getTime()
+  },
+  {
+    id: 24,
+    title: "اسمي",
+    artist: "أدهم سليمان",
+    url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775911860/Adham_Seliman_Esmy__cut_323sec_dhiu2v.wav",
+    createdAt: new Date("2026-04-11").getTime()
   }
 ];
