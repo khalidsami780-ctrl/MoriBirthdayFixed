@@ -93,24 +93,24 @@ const S = {
     borderRight: '4px solid #f4c2d7', // Pinkish robust romantic border
     boxShadow: '0 15px 40px rgba(0,0,0,0.6), inset 0 0 15px rgba(244, 194, 215, 0.05)',
     borderRadius: '16px',
-    padding: '16px 20px',
+    padding: 'clamp(12px, 3vw, 16px) clamp(16px, 4vw, 20px)',
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
-    maxWidth: '320px',
+    gap: 'clamp(10px, 3vw, 14px)',
+    maxWidth: 'clamp(240px, 75vw, 320px)',
     direction: 'rtl'
   },
   icon: {
-    fontSize: '2rem',
+    fontSize: 'clamp(1.5rem, 5vw, 2rem)',
     filter: 'drop-shadow(0 0 10px rgba(244, 194, 215, 0.6))'
   },
   textContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: '3px'
   },
   header: {
-    fontSize: '0.7rem',
+    fontSize: 'clamp(0.6rem, 2vw, 0.7rem)',
     fontFamily: 'system-ui, sans-serif',
     color: 'rgba(168, 200, 248, 0.6)',
     letterSpacing: '0.05em',
@@ -118,7 +118,7 @@ const S = {
   },
   text: {
     fontFamily: `'Scheherazade New', 'Arial', serif`,
-    fontSize: '1.15rem',
+    fontSize: 'clamp(1rem, 3.5vw, 1.15rem)',
     color: '#f0e8dc',
     lineHeight: 1.4,
     margin: 0

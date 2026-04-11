@@ -17,10 +17,11 @@ export default function FloatingMusicPlayer() {
   const audioRef = useRef(null)
   const currentTrack = playlist[currentTrackIndex]
 
-  // Handle Romantic Notice (Show every time)
+  // Handle Romantic Notice
   useEffect(() => {
     const timer = setTimeout(() => setShowNotice(true), 2500)
-    return () => clearTimeout(timer)
+    const hideTimer = setTimeout(() => setShowNotice(false), 2500 + 4500) // Auto-hide after 4.5 seconds
+    return () => { clearTimeout(timer); clearTimeout(hideTimer); }
   }, [])
 
   const dismissNotice = () => {
@@ -329,13 +330,13 @@ const S = {
   },
   miniPulse: { position: 'absolute', inset: -4, borderRadius: '50%', border: '2px solid rgba(91,156,246,0.4)', pointerEvents: 'none' },
   noticeBubble: {
-    position: 'absolute', bottom: '100%', left: '0', translate: '4px -24px', width: '240px',
+    position: 'absolute', bottom: '100%', left: '0', translate: '4px -20px', width: 'clamp(180px, 50vw, 210px)',
     background: 'rgba(12, 31, 74, 0.85)', backdropFilter: 'blur(12px)',
-    padding: '14px 18px', borderRadius: '22px', border: '1px solid rgba(91,156,246,0.4)',
-    color: '#f0e8dc', fontSize: '0.92rem', lineHeight: 1.5, direction: 'rtl',
+    padding: '10px 14px', borderRadius: '20px', border: '1px solid rgba(91,156,246,0.4)',
+    color: '#f0e8dc', fontSize: 'clamp(0.8rem, 3.2vw, 0.88rem)', lineHeight: 1.4, direction: 'rtl',
     textAlign: 'center', boxShadow: '0 15px 45px rgba(0,0,0,0.5), inset 0 0 15px rgba(91,156,246,0.1)',
     cursor: 'pointer', pointerEvents: 'auto', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', gap: '8px', fontFamily: '"Scheherazade New", serif'
+    alignItems: 'center', gap: '6px', fontFamily: '"Scheherazade New", serif'
   },
   noticeHeart: { fontSize: '1.4rem', filter: 'drop-shadow(0 0 8px #5b9cf6)' },
   noticeText: { fontWeight: 500 },
