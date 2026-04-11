@@ -6,6 +6,7 @@ import { useLocation } from 'react-router-dom'
 import Stars from '../components/Stars.jsx'
 import { messages as messagePosts } from '../data/messages.js'
 import { tips as advicePosts } from '../data/tips.js'
+import { milestones } from '../data/timeCapsule.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
@@ -71,10 +72,26 @@ const SH = {
    MESSAGE CARD
 ═══════════════════════════════════════════════════════════════ */
 const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
-  const ref    = useRef(null)
+  const ref = useRef(null)
+  const textRef = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.06 })
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [needsReadMore, setNeedsReadMore] = useState(false)
 
   const validMedia = post.media || []
+
+  useEffect(() => {
+    const checkHeight = () => {
+      if (textRef.current) {
+        // threshold can be ~250px or based on line count
+        setNeedsReadMore(textRef.current.scrollHeight > 250)
+      }
+    }
+    
+    checkHeight()
+    window.addEventListener('resize', checkHeight)
+    return () => window.removeEventListener('resize', checkHeight)
+  }, [post.text])
 
   return (
     <motion.article
@@ -102,11 +119,55 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
       <div style={MC.divider} />
       <div style={MC.quoteIcon}>❝</div>
 
-      <p style={MC.content}>{post.text}</p>
+      <div style={{ position: 'relative' }}>
+        <p 
+          ref={textRef}
+          style={{ 
+            ...MC.content, 
+            maxHeight: isExpanded ? 'none' : '250px',
+            overflow: 'hidden',
+            transition: 'max-height 0.4s ease-in-out',
+            maskImage: !isExpanded && needsReadMore 
+              ? 'linear-gradient(to bottom, black 70%, transparent 100%)' 
+              : 'none',
+            WebkitMaskImage: !isExpanded && needsReadMore 
+              ? 'linear-gradient(to bottom, black 70%, transparent 100%)' 
+              : 'none'
+          }}
+        >
+          {post.text}
+        </p>
+        
+        {needsReadMore && (
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#5b9cf6',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: '10px 0',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              display: 'block',
+              marginTop: isExpanded ? '10px' : '-20px',
+              position: 'relative',
+              zIndex: 2,
+              direction: 'rtl',
+              textAlign: 'right',
+              width: '100%',
+              textDecoration: 'underline'
+            }}
+          >
+            {isExpanded ? 'إخفاء العرض ⌃' : 'إقرأ المزيد …'}
+          </button>
+        )}
+      </div>
 
       {/* ── Extracted Media Gallery Multi-Processor ── */}
       {validMedia.length > 0 && (
-        <div style={{ width: '100%', flexShrink: 0, display: 'block' }}>
+        <div style={{ width: '100%', flexShrink: 0, display: 'block', marginTop: '1.5rem' }}>
           <MediaPreview media={validMedia} />
         </div>
       )}
@@ -318,6 +379,7 @@ function TabNav({ active, onChange }) {
   const tabs = [
     { id: 'messages', label: 'الرسائل' },
     { id: 'advice',   label: 'النصائح' },
+    { id: 'covenants', label: 'مواثيقنا' },
   ]
   return (
     <div style={TN.wrap}>
@@ -364,33 +426,49 @@ const TN = {
 /* ═══════════════════════════════════════════════════════════════
    SECTION WRAPPERS
 ═══════════════════════════════════════════════════════════════ */
-function MessagesSection() {
+function MessagesSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
-  const sorted = [...messagePosts].sort((a, b) => b.createdAt - a.createdAt)
+  
+  const filtered = messagePosts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         post.text.toLowerCase().includes(searchTerm.toLowerCase())
+    const date = new Date(post.createdAt)
+    const matchesYear = dateFilter.year === 'all' || date.getFullYear().toString() === dateFilter.year
+    const matchesMonth = dateFilter.month === 'all' || date.getMonth().toString() === dateFilter.month
+    return matchesSearch && matchesYear && matchesMonth
+  })
+
+  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt)
   const visible = sorted.slice(0, visibleCount)
   const hasMore = visibleCount < sorted.length
 
   return (
     <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
       <SectionHeader eyebrow="كلمات من القلب" title="الرسائل" />
-      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
-        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
-        ستُضاف رسائل جديدة من حين لآخر…
-      </motion.p>
-      <div style={SEC.list}>
-        <AnimatePresence initial={false}>
-          {visible.map((post, i) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: i >= visibleCount - 5 ? (i - (visibleCount - 5)) * 0.07 : 0, ease: [0.22,1,0.36,1] }}
-            >
-              <MessageCard post={post} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {filtered.length === 0 ? (
+        <p style={{ ...SEC.hint, marginTop: '2rem' }}>مفيش رسايل بالاسم ده يا موري.. جربي تبحثي بحاجة تانية 💙</p>
+      ) : (
+        <>
+          <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
+            transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
+            ستُضاف رسائل جديدة من حين لآخر…
+          </motion.p>
+          <div style={SEC.list}>
+            <AnimatePresence initial={false}>
+              {visible.map((post, i) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, delay: i >= visibleCount - 5 ? (i - (visibleCount - 5)) * 0.07 : 0, ease: [0.22,1,0.36,1] }}
+                >
+                  <MessageCard post={post} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </>
+      )}
 
       {hasMore && (
         <motion.div style={{ textAlign: 'center', marginTop: '1.75rem' }}
@@ -409,33 +487,49 @@ function MessagesSection() {
   )
 }
 
-function AdviceSection() {
+function AdviceSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
-  const sorted = [...advicePosts].sort((a, b) => b.createdAt - a.createdAt)
+  
+  const filtered = advicePosts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         post.text.toLowerCase().includes(searchTerm.toLowerCase())
+    const date = new Date(post.createdAt)
+    const matchesYear = dateFilter.year === 'all' || date.getFullYear().toString() === dateFilter.year
+    const matchesMonth = dateFilter.month === 'all' || date.getMonth().toString() === dateFilter.month
+    return matchesSearch && matchesYear && matchesMonth
+  })
+
+  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt)
   const visible = sorted.slice(0, visibleCount)
   const hasMore = visibleCount < sorted.length
 
   return (
     <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
       <SectionHeader eyebrow="نصائح… ل موري" title="النصائح" />
-      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
-        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
-        ستُضاف كلمات جديدة من حين لآخر… لمن يهمه أن يقرأ
-      </motion.p>
-      <div style={SEC.list}>
-        <AnimatePresence initial={false}>
-          {visible.map((post, i) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: i >= visibleCount - 5 ? (i - (visibleCount - 5)) * 0.07 : 0, ease: [0.22,1,0.36,1] }}
-            >
-              <AdviceCard post={post} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {filtered.length === 0 ? (
+        <p style={{ ...SEC.hint, marginTop: '2rem' }}>مفيش نصائح بالاسم ده يا موري.. جربي تبحثي بحاجة تانية 💙</p>
+      ) : (
+        <>
+          <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
+            transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
+            ستُضاف كلمات جديدة من حين لآخر… لمن يهمه أن يقرأ
+          </motion.p>
+          <div style={SEC.list}>
+            <AnimatePresence initial={false}>
+              {visible.map((post, i) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, delay: i >= visibleCount - 5 ? (i - (visibleCount - 5)) * 0.07 : 0, ease: [0.22,1,0.36,1] }}
+                >
+                  <AdviceCard post={post} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </>
+      )}
 
       {hasMore && (
         <motion.div style={{ textAlign: 'center', marginTop: '1.75rem' }}
@@ -478,11 +572,264 @@ const SEC = {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   COVENANTS SECTION
+   ═══════════════════════════════════════════════════════════════ */
+function CovenantsSection() {
+  const currentYear = new Date().getFullYear()
+  
+  // Calculate finished years (archive)
+  // Our data starts from 2026. A year is in archive only if currentYear > that year.
+  const allYears = Array.from({ length: 8 }, (_, i) => 2026 + i)
+  const archiveYears = allYears.filter(y => y < currentYear).sort((a, b) => b - a)
+
+  return (
+    <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
+      <SectionHeader eyebrow="مواثيق باقية" title="مواثيقنا الغالية" />
+      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
+        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
+        تواريخ محفورة بالقلب.. تفتح في موعدها كل عام 💙
+      </motion.p>
+      
+      {/* Current Year Milestones */}
+      <h4 style={{ color: 'rgba(168,200,248,0.6)', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', borderBottom: '1px solid rgba(168,200,248,0.1)', paddingBottom: '10px' }}>
+        مواثيق عام {currentYear}
+      </h4>
+      <div style={SEC.list}>
+        {milestones.map((milestone, idx) => (
+          <CovenantCard key={milestone.id} milestone={milestone} delay={idx * 0.1} />
+        ))}
+      </div>
+
+      {/* Archive Section (Only if archiveYears exists) */}
+      {archiveYears.length > 0 && (
+        <div style={{ marginTop: '60px' }}>
+          <h4 style={{ 
+            color: '#e8c97e', 
+            fontSize: '1.4rem', 
+            marginBottom: '30px', 
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '15px'
+          }}>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(232,201,126,0.3))' }}></span>
+            أرشيف السنين الغالية
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(232,201,126,0.3))' }}></span>
+          </h4>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {archiveYears.map((year, idx) => (
+              <ArchiveYearBox key={year} year={year} delay={idx * 0.15} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CovenantCard({ milestone, delay }) {
+  const [timeLeft, setTimeLeft] = useState('')
+  const currentYear = new Date().getFullYear()
+  const [isUnlocked, setIsUnlocked] = useState(false)
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date()
+      const eventDate = new Date(currentYear, milestone.date.month - 1, milestone.date.day)
+      const unlocked = now.getTime() >= eventDate.getTime()
+      setIsUnlocked(unlocked)
+
+      if (!unlocked) {
+        const diff = eventDate - now
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+        setTimeLeft(`${days} يوم و ${hours} ساعة`)
+      }
+    }
+    update()
+    const timer = setInterval(update, 60000)
+    return () => clearInterval(timer)
+  }, [milestone])
+
+  const messageData = milestone.yearlyMessages[currentYear]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.6 }}
+      style={{
+        ...MC.card,
+        borderLeft: isUnlocked ? '3px solid #5b9cf6' : '3px solid rgba(168,200,248,0.2)',
+        background: isUnlocked ? 'rgba(6,14,46,0.75)' : 'rgba(6,14,46,0.45)',
+        padding: '25px',
+        overflow: 'hidden'
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', direction: 'rtl' }}>
+        <span style={{ fontSize: '2.8rem', opacity: isUnlocked ? 1 : 0.4 }}>{milestone.icon}</span>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ ...MC.title, color: isUnlocked ? '#f0e8dc' : 'rgba(168,200,248,0.5)', marginBottom: '15px' }}>
+            {milestone.title}
+          </h3>
+
+          <div style={{ 
+            ...MC.content, 
+            color: isUnlocked ? 'rgba(230,242,255,0.9)' : 'rgba(168,200,248,0.4)', 
+            fontStyle: isUnlocked ? 'normal' : 'italic',
+            lineHeight: '1.8'
+          }}>
+            {isUnlocked ? (
+              <>
+                <div style={{ marginBottom: '15px', whiteSpace: 'pre-wrap' }}>{messageData.text}</div>
+                {messageData.poem && (
+                  <div style={{ 
+                    background: 'rgba(232,201,126,0.05)', 
+                    padding: '20px', 
+                    borderRadius: '12px', 
+                    borderRight: '3px solid #e8c97e',
+                    fontFamily: `'Scheherazade New', serif`,
+                    fontSize: '1.3rem',
+                    color: '#e8c97e',
+                    textAlign: 'center',
+                    whiteSpace: 'pre-wrap',
+                    lineHeight: '2.4',
+                    marginTop: '20px'
+                  }}>
+                    {messageData.poem}
+                  </div>
+                )}
+              </>
+            ) : (
+              `هذا السر لعام ${currentYear} سوف يفتح ليكي في موعده.. كوني في الانتظار 💙`
+            )}
+          </div>
+
+          {!isUnlocked && (
+            <div style={{ marginTop: '15px', fontSize: '0.85rem', color: '#e8c97e', background: 'rgba(232,201,126,0.1)', padding: '8px 15px', borderRadius: '10px', display: 'inline-block' }}>
+              🔒 يفتح بعد: {timeLeft}
+            </div>
+          )}
+
+          {isUnlocked && (
+            <div style={{ marginTop: '15px', fontSize: '0.8rem', color: 'rgba(91,156,246,0.6)', textAlign: 'left', opacity: 0.8 }}>
+              — ميثاق المحبة لعام {currentYear} ✨
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function ArchiveYearBox({ year, delay }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.5 }}
+      style={{
+        background: 'rgba(10, 20, 50, 0.4)',
+        borderRadius: '15px',
+        border: '1px solid rgba(232, 201, 126, 0.2)',
+        overflow: 'hidden',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+      }}
+    >
+      {/* Folder Header */}
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: '20px 25px',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: isOpen ? 'rgba(232, 201, 126, 0.1)' : 'transparent',
+          transition: 'all 0.3s',
+          direction: 'rtl'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span style={{ fontSize: '1.8rem' }}>📁</span>
+          <div>
+            <h3 style={{ margin: 0, color: '#f0e8dc', fontSize: '1.1rem' }}>أرشيف مكاتيب عام {year}</h3>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(168,200,248,0.5)' }}>يحتوي على ٤ مواثيق غالية محفورة في الذاكرة</span>
+          </div>
+        </div>
+        <motion.span
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          style={{ color: '#5b9cf6', fontSize: '1.2rem' }}
+        >
+          ▼
+        </motion.span>
+      </div>
+
+      {/* Folder Content */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '0 25px 25px', display: 'flex', flexDirection: 'column', gap: '15px', direction: 'rtl' }}>
+              {milestones.map((milestone) => {
+                const data = milestone.yearlyMessages[year]
+                return (
+                  <div key={milestone.id} style={{ 
+                    background: 'rgba(232, 201, 126, 0.05)', 
+                    padding: '20px', 
+                    borderRadius: '12px',
+                    border: '1px solid rgba(232, 201, 126, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', color: '#e8c97e' }}>
+                      <span style={{ fontSize: '1.2rem' }}>{milestone.icon}</span>
+                      <strong style={{ fontSize: '1rem' }}>{milestone.title}</strong>
+                    </div>
+                    <div style={{ color: 'rgba(230,242,255,0.85)', fontSize: '0.95rem', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+                      {data.text}
+                    </div>
+                    {data.poem && (
+                      <div style={{ 
+                        marginTop: '15px', 
+                        padding: '15px', 
+                        background: 'rgba(232,201,126,0.03)', 
+                        borderRadius: '8px',
+                        fontFamily: `'Scheherazade New', serif`,
+                        fontSize: '1.1rem',
+                        color: '#e8c97e',
+                        textAlign: 'center',
+                        lineHeight: '2.2',
+                        borderRight: '2px solid #e8c97e'
+                      }}>
+                        {data.poem}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 export default function MessagesPage() {
   const location = useLocation()
   const [activeTab, setActiveTab] = useState(location.state?.tab || 'messages')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dateFilter, setDateFilter] = useState({ year: 'all', month: 'all' })
   const handleTab = useCallback(t => setActiveTab(t), [])
 
   useEffect(() => {
@@ -540,7 +887,49 @@ export default function MessagesPage() {
             transition={{ delay:0.15, duration:0.65 }}
             style={{ display:'flex', justifyContent:'center' }}
           >
-            <TabNav active={activeTab} onChange={handleTab} />
+          <TabNav active={activeTab} onChange={handleTab} />
+
+          {/* Search & Filter UI (only for Messages & Advice) */}
+          {activeTab !== 'covenants' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={F.searchContainer}
+            >
+              <div style={F.searchBox}>
+                <span style={F.searchIcon}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="ابحث في الرسائل..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={F.searchInput}
+                />
+              </div>
+              <div style={F.filterRow}>
+                <select 
+                  value={dateFilter.year} 
+                  onChange={(e) => setDateFilter(prev => ({ ...prev, year: e.target.value }))}
+                  style={F.filterSelect}
+                >
+                  <option value="all">كل السنين</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+                <select 
+                  value={dateFilter.month} 
+                  onChange={(e) => setDateFilter(prev => ({ ...prev, month: e.target.value }))}
+                  style={F.filterSelect}
+                >
+                  <option value="all">كل الشهور</option>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <option key={i} value={i}>{new Intl.DateTimeFormat('ar-EG', { month: 'long' }).format(new Date(2024, i))}</option>
+                  ))}
+                </select>
+              </div>
+            </motion.div>
+          )}
           </motion.div>
 
           <AnimatePresence mode="wait">
@@ -549,13 +938,40 @@ export default function MessagesPage() {
               initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }}
               transition={{ duration:0.4, ease:[0.22,1,0.36,1] }}
             >
-              {activeTab === 'messages' ? <MessagesSection /> : <AdviceSection />}
+              {activeTab === 'messages' && <MessagesSection searchTerm={searchTerm} dateFilter={dateFilter} />}
+              {activeTab === 'advice' && <AdviceSection searchTerm={searchTerm} dateFilter={dateFilter} />}
+              {activeTab === 'covenants' && <CovenantsSection />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
     </motion.div>
   )
+}
+
+const F = {
+  searchContainer: {
+    display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center',
+    marginBottom: '2.5rem', width: '100%', maxWidth: '500px', margin: '0 auto 2.5rem'
+  },
+  searchBox: {
+    position: 'relative', width: '100%', display: 'flex', alignItems: 'center',
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168,200,248,0.15)',
+    borderRadius: '12px', padding: '10px 15px'
+  },
+  searchIcon: { marginRight: '10px', opacity: 0.6 },
+  searchInput: {
+    background: 'transparent', border: 'none', color: '#f0e8dc', outline: 'none',
+    width: '100%', fontFamily: `'Scheherazade New', serif`, fontSize: '1.1rem', direction: 'rtl'
+  },
+  filterRow: {
+    display: 'flex', gap: '10px', width: '100%', justifyContent: 'center'
+  },
+  filterSelect: {
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168,200,248,0.1)',
+    borderRadius: '10px', color: 'rgba(168,200,248,0.8)', padding: '6px 12px',
+    fontFamily: `'Scheherazade New', serif`, fontSize: '0.95rem', outline: 'none', cursor: 'pointer'
+  }
 }
 
 const MP = {
