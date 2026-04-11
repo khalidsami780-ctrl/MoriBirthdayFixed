@@ -111,6 +111,18 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
         </div>
       )}
 
+      {post.link && (
+        <a href={post.link} target="_blank" rel="noopener noreferrer" style={MC.link}>
+          <span>{post.linkLabel || 'رابط مرفق'}</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      )}
+
       <div style={MC.footerDivider} />
       <p style={MC.note}>
         {`سيظل هذا المكان موجودًا…\nلمن أراد أن يعود يومًا ويقرأ بهدوء`}
@@ -178,6 +190,15 @@ const MC = {
     fontSize: 'clamp(0.88rem,2.4vw,1rem)', lineHeight: 1.9,
     color: 'rgba(168,200,248,0.38)',
     fontStyle: 'italic', whiteSpace: 'pre-line', margin: 0,
+  },
+  link: {
+    display: 'inline-flex', alignItems: 'center', gap: 6,
+    marginTop: '1rem', padding: '6px 16px', borderRadius: 999,
+    border: '1px solid rgba(91,156,246,0.3)', background: 'rgba(91,156,246,0.08)',
+    color: 'rgba(168,200,248,0.8)',
+    fontFamily: `'Scheherazade New','Arial',serif`, direction: 'rtl',
+    fontSize: 'clamp(0.8rem,2vw,0.9rem)', textDecoration: 'none',
+    transition: 'background 0.25s, border-color 0.25s, color 0.25s',
   },
 }
 

@@ -64,8 +64,8 @@ export default function SafeBox() {
   if(lastVentStr) {
      const lastVent = Number(lastVentStr);
      const diff = Date.now() - lastVent;
-     if(diff < 7 * 24 * 60 * 60 * 1000) {
-        canVent = false; // Restrict because less than 7 days have passed
+     if(diff < 6 * 24 * 60 * 60 * 1000) {
+        canVent = false; // Restrict because less than 6 days have passed
      }
   }
 
@@ -244,7 +244,7 @@ export default function SafeBox() {
                                transition={{ delay: 0.2 }}
                                style={{...S.para, fontSize: '1.05rem', color: '#ffeb3b', padding: '12px 15px', background: 'rgba(255,235,59,0.05)', borderRadius: '12px', border: '1px solid rgba(255,235,59,0.2)', marginBottom: '20px', lineHeight: 1.4}}
                              >
-                               عشان الرسالة دي غالية أوي، مسموحلك تبعتي لدودو رسالة واحدة بس كل أسبوع. وفّري الكارت بتاعك للوقت اللي تحتاجيه بجد، وهو دايماً حاسس بيكي حتى وإنتي ساكتة 💙
+                               عشان الرسالة دي غالية أوي، مسموحلك تبعتي لدودو رسالة واحدة كل 6 أيام. وفّري الكارت بتاعك للوقت اللي تحتاجيه بجد، وهو دايماً حاسس بيكي حتى وإنتي ساكتة 💙
                              </motion.div>
                              
                              <textarea 
@@ -282,10 +282,10 @@ export default function SafeBox() {
                              <div style={{fontSize: '3.5rem', filter: 'drop-shadow(0 0 10px rgba(91, 156, 246, 0.5))', marginBottom: '15px'}}>⏳</div>
                              <h2 style={{...S.title, fontSize:'1.6rem', marginBottom: '15px'}}>بطاقتك في حفظ قلبي 💌</h2>
                              <p style={{...S.para, textAlign:'center'}}>
-                               يا حبيبة الروح، إنتي استخدمتي رسالتك المميزة الخاصة بالأسبوع ده. 
+                               يا حبيبة الروح، إنتي استخدمتي بطاقتك المميزة. 
                                دودو جنبك وبيدعيلك في كل وقت حتى من غير ما تكتبيله، ومتأكد إنك تقدري تعدي أي ضغط دلوقتي بثقة وإيمان..
                                <br/><br/>
-                               هستنى رسالتك الجديدة الأسبوع الجاي 💙.
+                               هستنى رسالتك الجديدة بعد كام يوم 💙.
                              </p>
                              <motion.button 
                                style={S.closeButton} 
