@@ -13,8 +13,15 @@ export default function FloatingMusicPlayer() {
   const [isMuted, setIsMuted] = useState(false)
   const [showNotice, setShowNotice] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 500)
   
   const audioRef = useRef(null)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   const currentTrack = playlist[currentTrackIndex]
 
   // Handle Romantic Notice
@@ -330,7 +337,7 @@ const S = {
   },
   miniPulse: { position: 'absolute', inset: -4, borderRadius: '50%', border: '2px solid rgba(91,156,246,0.4)', pointerEvents: 'none' },
   noticeBubble: {
-    position: 'absolute', bottom: '100%', left: '0', translate: '4px -20px', width: 'clamp(180px, 50vw, 210px)',
+    position: 'absolute', bottom: '100%', left: '0', translate: '4px -20px', width: 'min(240px, 80vw)',
     background: 'rgba(12, 31, 74, 0.85)', backdropFilter: 'blur(12px)',
     padding: '10px 14px', borderRadius: '20px', border: '1px solid rgba(91,156,246,0.4)',
     color: '#f0e8dc', fontSize: 'clamp(0.8rem, 3.2vw, 0.88rem)', lineHeight: 1.4, direction: 'rtl',
@@ -346,7 +353,7 @@ const S = {
     borderTop: '12px solid rgba(91,156,246,0.4)'
   },
   expandedPlayer: {
-    width: 300, minHeight: 180, borderRadius: 28, background: 'rgba(4,10,34,0.88)',
+    width: 'min(300px, 88vw)', minHeight: 180, borderRadius: 28, background: 'rgba(4,10,34,0.88)',
     backdropFilter: 'blur(30px) saturate(150%)', WebkitBackdropFilter: 'blur(30px) saturate(150%)',
     border: '1px solid rgba(91,156,246,0.35)', boxShadow: '0 30px 80px rgba(0,0,0,0.7)',
     padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflow: 'hidden'

@@ -7,6 +7,7 @@ import Stars from '../components/Stars.jsx'
 import { messages as messagePosts } from '../data/messages.js'
 import { tips as advicePosts } from '../data/tips.js'
 import { milestones } from '../data/timeCapsule.js'
+import { PINNED_MESSAGE_IDS } from '../data/pinnedConfig.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
@@ -71,7 +72,7 @@ const SH = {
 /* ═══════════════════════════════════════════════════════════════
    MESSAGE CARD
 ═══════════════════════════════════════════════════════════════ */
-const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
+const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false }) {
   const ref = useRef(null)
   const textRef = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.06 })
@@ -81,17 +82,17 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
   const validMedia = post.media || []
 
   useEffect(() => {
-    const checkHeight = () => {
+    if (!textRef.current) return;
+
+    const observer = new ResizeObserver(() => {
       if (textRef.current) {
-        // threshold can be ~250px or based on line count
-        setNeedsReadMore(textRef.current.scrollHeight > 250)
+        setNeedsReadMore(textRef.current.scrollHeight > 280);
       }
-    }
-    
-    checkHeight()
-    window.addEventListener('resize', checkHeight)
-    return () => window.removeEventListener('resize', checkHeight)
-  }, [post.text])
+    });
+
+    observer.observe(textRef.current);
+    return () => observer.disconnect();
+  }, [post.text]);
 
   return (
     <motion.article
@@ -100,14 +101,38 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
       initial={{ opacity: 0, y: 28, scale: 0.97 }}
       animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
       transition={{ duration: 0.78, delay, ease: [0.22, 1, 0.36, 1] }}
-      style={MC.card}
+      style={{
+        ...MC.card,
+        ...(pinned ? {
+          borderColor: 'rgba(201,168,76,0.45)',
+          boxShadow: '0 0 28px rgba(201,168,76,0.12), 0 20px 55px rgba(0,0,0,0.55)',
+          borderLeft: '3px solid rgba(201,168,76,0.7)',
+        } : {})
+      }}
       whileHover={{
         scale: 1.012,
-        boxShadow: '0 0 32px rgba(91,156,246,0.18), 0 20px 55px rgba(0,0,0,0.55)',
-        borderColor: 'rgba(91,156,246,0.3)',
+        boxShadow: pinned
+          ? '0 0 36px rgba(201,168,76,0.25), 0 20px 55px rgba(0,0,0,0.55)'
+          : '0 0 32px rgba(91,156,246,0.18), 0 20px 55px rgba(0,0,0,0.55)',
+        borderColor: pinned ? 'rgba(201,168,76,0.65)' : 'rgba(91,156,246,0.3)',
       }}
     >
-      <div style={MC.topLine} />
+      {/* Pinned Badge */}
+      {pinned && (
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          background: 'linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.08))',
+          border: '1px solid rgba(201,168,76,0.35)',
+          borderRadius: '999px', padding: '3px 12px',
+          marginBottom: '10px',
+          fontSize: '0.8rem', color: '#e8c97e',
+          fontFamily: `'Scheherazade New', serif`,
+          direction: 'rtl',
+        }}>
+          📌 مثبّتة
+        </div>
+      )}
+      <div style={{ ...MC.topLine, background: pinned ? 'linear-gradient(90deg,transparent,rgba(201,168,76,0.7),transparent)' : undefined }} />
 
       <time style={MC.date}>
         {new Date(post.createdAt).toLocaleDateString('ar-EG', {
@@ -124,14 +149,14 @@ const MessageCard = memo(function MessageCard({ post, delay = 0 }) {
           ref={textRef}
           style={{ 
             ...MC.content, 
-            maxHeight: isExpanded ? 'none' : '250px',
+            maxHeight: isExpanded ? '2000px' : '220px',
             overflow: 'hidden',
-            transition: 'max-height 0.4s ease-in-out',
+            transition: 'max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
             maskImage: !isExpanded && needsReadMore 
-              ? 'linear-gradient(to bottom, black 70%, transparent 100%)' 
+              ? 'linear-gradient(to bottom, black 60%, transparent 100%)' 
               : 'none',
             WebkitMaskImage: !isExpanded && needsReadMore 
-              ? 'linear-gradient(to bottom, black 70%, transparent 100%)' 
+              ? 'linear-gradient(to bottom, black 60%, transparent 100%)' 
               : 'none'
           }}
         >
@@ -405,7 +430,8 @@ const TN = {
     border: '1px solid rgba(91,156,246,0.22)',
     borderRadius: 999, padding: 3,
     boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
-    marginBottom: 'clamp(2rem,5vw,3rem)',
+    marginBottom: 'clamp(1.5rem,5vw,2.5rem)',
+    flexWrap: 'wrap',
   },
   tab: {
     position: 'relative', flex: 1,
@@ -423,13 +449,19 @@ const TN = {
   },
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION WRAPPERS
-═══════════════════════════════════════════════════════════════ */
+/* ── Pinned Messages (read from pinnedConfig.js) ── */
 function MessagesSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
-  
+
+  // Collect all pinned posts in order
+  const pinnedPosts = PINNED_MESSAGE_IDS
+    .map(id => messagePosts.find(p => p.id === id))
+    .filter(Boolean)
+
+  const pinnedIds = new Set(PINNED_MESSAGE_IDS)
+
   const filtered = messagePosts.filter(post => {
+    if (pinnedIds.has(post.id)) return false // excluded — appears at top
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          post.text.toLowerCase().includes(searchTerm.toLowerCase())
     const date = new Date(post.createdAt)
@@ -442,10 +474,34 @@ function MessagesSection({ searchTerm, dateFilter }) {
   const visible = sorted.slice(0, visibleCount)
   const hasMore = visibleCount < sorted.length
 
+  // Pinned posts also respect search term
+  const visiblePinned = pinnedPosts.filter(post =>
+    searchTerm === '' ||
+    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.text.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   return (
     <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
       <SectionHeader eyebrow="كلمات من القلب" title="الرسائل" />
-      {filtered.length === 0 ? (
+
+      {/* ── Pinned Messages ── */}
+      {visiblePinned.length > 0 && (
+        <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {visiblePinned.map((post, i) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.55, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <MessageCard post={post} pinned={true} />
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {filtered.length === 0 && visiblePinned.length === 0 ? (
         <p style={{ ...SEC.hint, marginTop: '2rem' }}>مفيش رسايل بالاسم ده يا موري.. جربي تبحثي بحاجة تانية 💙</p>
       ) : (
         <>
@@ -830,7 +886,14 @@ export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState(location.state?.tab || 'messages')
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState({ year: 'all', month: 'all' })
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
   const handleTab = useCallback(t => setActiveTab(t), [])
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (location.state?.tab) {
@@ -885,51 +948,92 @@ export default function MessagesPage() {
           <motion.div
             initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }}
             transition={{ delay:0.15, duration:0.65 }}
-            style={{ display:'flex', justifyContent:'center' }}
+            style={{ 
+              display:'flex', 
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent:'center',
+              gap: '1.5rem',
+              marginBottom: '3rem'
+            }}
           >
-          <TabNav active={activeTab} onChange={handleTab} />
+            {/* ── Tabs Row ── */}
+            <div style={{ 
+              ...TN.wrap, 
+              flexDirection: isMobile ? 'column' : 'row', 
+              borderRadius: isMobile ? '20px' : '999px',
+              marginBottom: 0,
+              width: '100%',
+              maxWidth: '600px',
+            }}>
+              {['messages', 'advice', 'covenants'].map(id => {
+                const label = id === 'messages' ? 'الرسائل' : id === 'advice' ? 'النصائح' : 'مواثيقنا'
+                return (
+                  <button key={id}
+                    style={{ 
+                      ...TN.tab, 
+                      color: activeTab === id ? '#f0e8dc' : 'rgba(168,200,248,0.55)',
+                      padding: isMobile ? '14px' : TN.tab.padding
+                    }}
+                    onClick={() => handleTab(id)}
+                  >
+                    {activeTab === id && (
+                      <motion.div layoutId="tab-bg" style={TN.bg}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
+                    )}
+                    <span style={{ position: 'relative', zIndex: 1 }}>{label}</span>
+                  </button>
+                )
+              })}
+            </div>
 
-          {/* Search & Filter UI (only for Messages & Advice) */}
-          {activeTab !== 'covenants' && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={F.searchContainer}
-            >
-              <div style={F.searchBox}>
-                <span style={F.searchIcon}>🔍</span>
-                <input
-                  type="text"
-                  placeholder="ابحث في الرسائل..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={F.searchInput}
-                />
-              </div>
-              <div style={F.filterRow}>
-                <select 
-                  value={dateFilter.year} 
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, year: e.target.value }))}
-                  style={F.filterSelect}
-                >
-                  <option value="all">كل السنين</option>
-                  <option value="2026">2026</option>
-                  <option value="2025">2025</option>
-                  <option value="2024">2024</option>
-                </select>
-                <select 
-                  value={dateFilter.month} 
-                  onChange={(e) => setDateFilter(prev => ({ ...prev, month: e.target.value }))}
-                  style={F.filterSelect}
-                >
-                  <option value="all">كل الشهور</option>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i} value={i}>{new Intl.DateTimeFormat('ar-EG', { month: 'long' }).format(new Date(2024, i))}</option>
-                  ))}
-                </select>
-              </div>
-            </motion.div>
-          )}
+            {/* ── Search & Filter Row (only for Messages & Advice) ── */}
+            {activeTab !== 'covenants' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                style={{
+                  ...F.searchContainer,
+                  maxWidth: '600px', // Matches TabNav for symmetry
+                  margin: 0
+                }}
+              >
+                <div style={F.searchBox}>
+                  <span style={F.searchIcon}>🔍</span>
+                  <input
+                     type="text"
+                     placeholder="ابحث في الرسائل..."
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                     onFocus={(e) => e.target.parentElement.style.boxShadow = '0 0 15px rgba(91,156,246,0.3), inset 0 0 10px rgba(91,156,246,0.1)'}
+                     onBlur={(e) => e.target.parentElement.style.boxShadow = 'none'}
+                     style={F.searchInput}
+                   />
+                </div>
+                <div style={F.filterRow}>
+                  <select 
+                    value={dateFilter.year} 
+                    onChange={(e) => setDateFilter(prev => ({ ...prev, year: e.target.value }))}
+                    style={F.filterSelect}
+                  >
+                    <option value="all">كل السنين</option>
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                  <select 
+                    value={dateFilter.month} 
+                    onChange={(e) => setDateFilter(prev => ({ ...prev, month: e.target.value }))}
+                    style={F.filterSelect}
+                  >
+                    <option value="all">كل الشهور</option>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i} value={i}>{new Intl.DateTimeFormat('ar-EG', { month: 'long' }).format(new Date(2024, i))}</option>
+                    ))}
+                  </select>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
 
           <AnimatePresence mode="wait">
@@ -956,21 +1060,26 @@ const F = {
   },
   searchBox: {
     position: 'relative', width: '100%', display: 'flex', alignItems: 'center',
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168,200,248,0.15)',
-    borderRadius: '12px', padding: '10px 15px'
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168,200,248,0.22)',
+    borderRadius: '14px', padding: '12px 18px', transition: 'all 0.3s ease-in-out',
+    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
   },
-  searchIcon: { marginRight: '10px', opacity: 0.6 },
+  searchIcon: { marginRight: '12px', opacity: 0.5, fontSize: '1.2rem' },
   searchInput: {
     background: 'transparent', border: 'none', color: '#f0e8dc', outline: 'none',
-    width: '100%', fontFamily: `'Scheherazade New', serif`, fontSize: '1.1rem', direction: 'rtl'
+    width: '100%', fontFamily: `'Scheherazade New', serif`, fontSize: '1.15rem', direction: 'rtl'
   },
   filterRow: {
-    display: 'flex', gap: '10px', width: '100%', justifyContent: 'center'
+    display: 'flex', gap: '12px', width: '100%', justifyContent: 'center'
   },
   filterSelect: {
-    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168,200,248,0.1)',
-    borderRadius: '10px', color: 'rgba(168,200,248,0.8)', padding: '6px 12px',
-    fontFamily: `'Scheherazade New', serif`, fontSize: '0.95rem', outline: 'none', cursor: 'pointer'
+    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(168,200,248,0.15)',
+    borderRadius: '12px', color: 'rgba(168,200,248,0.85)', padding: '8px 16px',
+    fontFamily: `'Scheherazade New', serif`, fontSize: '1rem', outline: 'none', cursor: 'pointer',
+    transition: 'all 0.25s ease', flex: 1, minWidth: 0, appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(168,200,248,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'left 12px center',
   }
 }
 

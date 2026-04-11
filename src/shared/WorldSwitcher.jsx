@@ -143,7 +143,14 @@ export default function WorldSwitcher() {
   const stats        = useStats()
   const [ageOpen,   setAgeOpen]   = useState(false)
   const [showOrbit, setShowOrbit] = useState(true)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 500)
   const timerRef = useRef(null)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 500)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(()=>{
     timerRef.current=setTimeout(()=>setShowOrbit(false),8000)
@@ -254,7 +261,7 @@ export default function WorldSwitcher() {
           style={{display:'flex',fontSize:'0.95rem',lineHeight:1,flexShrink:0}}>
           {ageOpen?'✕':'⏳'}
         </motion.span>
-        <span style={S.toggleText}>{ageOpen?'Close':'Our Ages & Birthdays'}</span>
+        {(!isMobile || ageOpen) && <span style={S.toggleText}>{ageOpen?'Close':'Our Ages & Birthdays'}</span>}
         {!ageOpen&&(
           <motion.span style={S.liveDot}
             animate={{scale:[1,1.6,1],opacity:[0.7,1,0.7]}}
@@ -295,8 +302,8 @@ const S={
   root:{
     position:'fixed',top:'clamp(0.6rem,2vw,1rem)',left:0,right:0,
     marginLeft:'auto',marginRight:'auto',width:'fit-content',
-    maxWidth:'calc(100vw - 1.5rem)',zIndex:500,
-    display:'flex',flexDirection:'column',alignItems:'center',gap:'6px',
+    maxWidth:'calc(100vw - 1rem)',zIndex:500,
+    display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',
   },
   pillWrapper: {
     position: 'relative', display: 'flex', flex: 1, maxWidth: '100%', minWidth: 0
@@ -317,8 +324,8 @@ const S={
     border:'1px solid rgba(100,165,255,0.3)',pointerEvents:'none',
   },
   tab:{
-    display:'flex',alignItems:'center',gap:'clamp(3px,1vw,6px)',
-    padding:'clamp(7px,2vw,10px) clamp(8px,2.5vw,16px)',
+    display:'flex',alignItems:'center',gap:'clamp(2px,1vw,4px)',
+    padding:'clamp(6px,2vw,8px) clamp(4px,2.5vw,12px)',
     borderRadius:996,border:'none',background:'transparent',
     cursor:'pointer',fontFamily:`'Cormorant Garamond',Georgia,serif`,
     fontWeight:600,letterSpacing:'0.04em',whiteSpace:'nowrap',
