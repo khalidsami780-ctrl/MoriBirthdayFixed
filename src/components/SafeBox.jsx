@@ -1,27 +1,20 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { moodDatabase } from '../data/moodMessages.js'
 
 export default function SafeBox() {
-  const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate()
   const [stage, setStage] = useState('mood_selection') // 'mood_selection' | 'message' | 'smile' | 'venting'
   const [activeMessage, setActiveMessage] = useState('')
   const [ventMessage, setVentMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    const handleOpenReq = () => {
-      setStage('mood_selection')
-      setIsOpen(true)
-    }
-    window.addEventListener('open-safebox', handleOpenReq)
-    return () => window.removeEventListener('open-safebox', handleOpenReq)
-  }, [])
 
   const handleComfortedClick = () => {
     setStage('smile')
     setTimeout(() => {
-      setIsOpen(false)
+      navigate('/messages')
       setVentMessage('') // clean up input for next time
     }, 2800) // Show smile for approx 2.8 seconds then close modal
   }
@@ -89,14 +82,13 @@ export default function SafeBox() {
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
            <motion.div 
              style={S.overlay}
              initial={{ opacity: 0 }}
              animate={{ opacity: 1 }}
              exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
              transition={{ duration: 0.8 }}
-             onClick={() => { if(stage !== 'smile') setIsOpen(false) }}
+             onClick={() => { if(stage !== 'smile') navigate('/messages') }}
            >
               <motion.div 
                 style={S.modalContent}
@@ -106,6 +98,17 @@ export default function SafeBox() {
                 exit={{ scale: 0.9, y: 50, opacity: 0 }}
                 transition={{ duration: 0.6, type: 'spring', damping: 20 }}
               >
+                  {/* Close Button (X) */}
+                  <motion.button
+                    style={S.absClose}
+                    onClick={() => navigate('/messages')}
+                    whileHover={{ scale: 1.1, backgroundColor: 'rgba(244, 194, 215, 0.2)' }}
+                    whileTap={{ scale: 0.9 }}
+                    aria-label="إغلاق"
+                  >
+                    ✕
+                  </motion.button>
+
                   <AnimatePresence mode="wait">
                     
                     {/* STAGE 1: Mood Selection */}
@@ -303,7 +306,6 @@ export default function SafeBox() {
                   </AnimatePresence>
               </motion.div>
            </motion.div>
-        )}
       </AnimatePresence>
     </>
   )
@@ -342,6 +344,24 @@ const S = {
     direction: 'rtl',
     position: 'relative',
     overflow: 'hidden'
+  },
+  absClose: {
+    position: 'absolute',
+    top: '20px',
+    left: '20px',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(244, 194, 215, 0.2)',
+    color: 'rgba(244, 194, 215, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1rem',
+    cursor: 'pointer',
+    zIndex: 10,
+    outline: 'none',
   },
   moodContainer: {
     display: 'flex',

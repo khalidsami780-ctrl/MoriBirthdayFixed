@@ -117,7 +117,6 @@ export default function App() {
     <Suspense fallback={<PageLoader />}>
       <GlobalToast />
       <RandomLoveToast />
-      <SafeBox />
       <FloatingMusicPlayer />
       <UpdateNotification />
       <AnimatePresence mode="wait">
@@ -126,6 +125,7 @@ export default function App() {
           <Route path="/birthday"  element={<BirthdayPage />} />
           <Route path="/eid"       element={<EidPage />} />
           <Route path="/messages"  element={<MessagesPage />} />
+          <Route path="/safebox"   element={<SafeBox />} />
           <Route path="*"          element={<Navigate to="/birthday" replace />} />
         </Routes>
       </AnimatePresence>
