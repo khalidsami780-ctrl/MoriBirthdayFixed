@@ -1,55 +1,77 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 /**
  * UpdateNotification
  * ──────────────────
- * Listens for the PWA "updatefound" event from the Service Worker.
- * When a new version is available after a Vercel push, a floating
- * romantic bubble appears at the bottom of the screen offering Mori
- * a one-click refresh to load the latest content.
+ * This version uses a more aggressive polling strategy to check for updates
+ * every 60 seconds once the page is loaded, ensuring Khalid's pushes are 
+ * detected quickly by Mori's browser.
  */
 export default function UpdateNotification() {
   const [showUpdate, setShowUpdate] = useState(false)
   const [registration, setRegistration] = useState(null)
 
+  const checkUpdate = useCallback((reg) => {
+    if (!reg) return
+    // Force the browser to check for a new sw.js
+    reg.update().catch(err => console.debug('Worker update failed', err))
+  }, [])
+
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
-    // Listen for a new SW waiting to activate
+    let intervalId
+
     navigator.serviceWorker.ready.then((reg) => {
       setRegistration(reg)
 
-      // New SW found while page is open
+      // Function to play a soft chime when update is found
+      const playNotificationSound = () => {
+        const audio = new Audio('https://res.cloudinary.com/djdktudjh/video/upload/v1714652285/notification-chime_u2v0a5.mp3')
+        audio.volume = 0.4
+        audio.play().catch(e => console.debug('Audio play blocked by browser', e))
+      }
+
+      // 1. Initial check for waiting worker
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        setShowUpdate(true)
+        playNotificationSound()
+      }
+
+      // 2. Listen for transition to 'installed' state
+      const onStateChange = (newWorker) => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          setShowUpdate(true)
+          playNotificationSound()
+        }
+      }
+
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing
-        if (!newWorker) return
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // There's an old SW + a new one waiting → show notification
-            setShowUpdate(true)
-          }
-        })
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => onStateChange(newWorker))
+        }
       })
+
+      // 3. Poll for updates every 60 seconds (Khalid's updates are frequent)
+      intervalId = setInterval(() => checkUpdate(reg), 60 * 1000)
     })
 
-    // Also detect if we're already waiting on page load
-    navigator.serviceWorker.getRegistration().then((reg) => {
-      if (reg?.waiting && navigator.serviceWorker.controller) {
-        setShowUpdate(true)
-        setRegistration(reg)
-      }
-    })
-  }, [])
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [checkUpdate])
 
   const handleUpdate = () => {
     if (registration?.waiting) {
-      // Tell the waiting SW to take control immediately
       registration.waiting.postMessage({ type: 'SKIP_WAITING' })
     }
     setShowUpdate(false)
-    // Reload after a tiny delay so the new SW activates first
-    setTimeout(() => window.location.reload(), 300)
+    // Small delay to let SW activate
+    setTimeout(() => {
+      window.location.reload()
+    }, 200)
   }
 
   return (
@@ -62,83 +84,76 @@ export default function UpdateNotification() {
           transition={{ type: 'spring', stiffness: 340, damping: 28 }}
           style={{
             position: 'fixed',
-            bottom: '5rem',
+            bottom: '5.5rem',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 9999,
-            background: 'rgba(4, 10, 40, 0.92)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(91,156,246,0.35)',
-            borderRadius: '20px',
-            padding: '14px 20px',
+            background: 'rgba(5, 12, 45, 0.96)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(91,156,246,0.3)',
+            borderRadius: '24px',
+            padding: '12px 18px',
             display: 'flex',
             alignItems: 'center',
-            gap: '14px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 24px rgba(91,156,246,0.12)',
-            maxWidth: 'min(360px, 90vw)',
+            gap: '12px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 30px rgba(91,156,246,0.15)',
+            maxWidth: 'min(380px, 92vw)',
             width: 'max-content',
             direction: 'rtl',
           }}
         >
-          {/* Icon */}
-          <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>💙</span>
+          {/* Animated Heart/Icon */}
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{ fontSize: '1.4rem', flexShrink: 0 }}
+          >
+            💙
+          </motion.div>
 
-          {/* Text */}
-          <div style={{ flex: 1 }}>
+          {/* Text Container */}
+          <div style={{ flex: 1, paddingRight: '4px' }}>
             <p style={{
               fontFamily: `'Scheherazade New', serif`,
-              fontSize: '0.95rem',
-              color: 'rgba(212, 232, 255, 0.92)',
+              fontSize: '0.92rem',
+              fontWeight: 500,
+              color: 'rgba(215, 235, 255, 1)',
               margin: 0,
-              lineHeight: 1.5,
+              lineHeight: 1.4,
             }}>
-              في تحديث جديد من خالد..
+              خالد ضاف لك حاجة جديدة..
             </p>
             <p style={{
               fontFamily: `'Scheherazade New', serif`,
-              fontSize: '0.82rem',
-              color: 'rgba(168,200,248,0.55)',
+              fontSize: '0.8rem',
+              color: 'rgba(168,200,248,0.65)',
               margin: '2px 0 0',
             }}>
-              حمّلي التحديث عشان تشوفي كل حاجة جديدة 🌙
+              دوسي تحديث عشان تشوفيها دلوقتي ✨
             </p>
           </div>
 
-          {/* Update Button */}
+          {/* Action Button */}
           <motion.button
             onClick={handleUpdate}
-            whileHover={{ scale: 1.05, boxShadow: '0 0 16px rgba(91,156,246,0.4)' }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={{ scale: 1.05, background: 'rgba(91,156,246,0.2)' }}
+            whileTap={{ scale: 0.95 }}
             style={{
-              background: 'linear-gradient(135deg, rgba(52,110,215,0.9), rgba(26,62,145,0.95))',
-              border: '1px solid rgba(91,156,246,0.4)',
-              borderRadius: '12px',
-              color: '#d4e8ff',
+              background: 'rgba(91,156,246,0.12)',
+              border: '1px solid rgba(91,156,246,0.3)',
+              borderRadius: '14px',
+              color: '#97c2ff',
               fontFamily: `'Scheherazade New', serif`,
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              padding: '7px 16px',
+              fontSize: '0.85rem',
+              padding: '8px 14px',
               cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
+              fontWeight: 600,
+              transition: 'all 0.3s ease',
             }}
           >
-            تحديث الآن 🔄
+            تحديث 🔄
           </motion.button>
-
-          {/* Dismiss */}
-          <button
-            onClick={() => setShowUpdate(false)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'rgba(168,200,248,0.4)', fontSize: '1rem',
-              padding: '0 2px', flexShrink: 0, lineHeight: 1,
-            }}
-            aria-label="إغلاق"
-          >
-            ✕
-          </button>
         </motion.div>
       )}
     </AnimatePresence>
