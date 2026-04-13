@@ -14,6 +14,9 @@ const UpdateNotification = lazy(() => import('./components/UpdateNotification.js
 const NotificationBell = lazy(() => import('./components/NotificationBell.jsx'))
 const Navbar = lazy(() => import('./components/Navbar.jsx'))
 const LiveNote = lazy(() => import('./components/LiveNote.jsx'))
+const PulseOverlay = lazy(() => import('./components/PulseOverlay.jsx'))
+
+import useActiveTheme from './hooks/useActiveTheme.js'
 
 import { useTelegramBot } from './hooks/useTelegramBot.js'
 /* ── Full-screen loading fallback ─────────────────────────── */
@@ -43,6 +46,7 @@ export default function App() {
   const location = useLocation()
   const [showEnhancements, setShowEnhancements] = useState(false)
   const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement } = useTelegramBot()
+  const { themeStyles } = useActiveTheme()
 
   useEffect(() => {
     // Initial tracking on app mount
@@ -87,32 +91,48 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageLoader />}>
-      {/* 2. Routes Layer - Safebox portal inside here will stack ON TOP of Navbar */}
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/"          element={<Navigate to="/birthday" replace />} />
-          <Route path="/birthday"  element={<BirthdayPage />} />
-          <Route path="/eid"       element={<EidPage />} />
-          <Route path="/messages"  element={<MessagesPage />} />
-          <Route path="/safebox"   element={<SafeBox />} />
-          <Route path="*"          element={<Navigate to="/birthday" replace />} />
-        </Routes>
-      </AnimatePresence>
+      <div style={{ 
+        position: 'relative', 
+        minHeight: '100vh', 
+        transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        ...themeStyles
+      }}>
+        {/* Atmosphere Overlay Layer */}
+        <div style={{
+           position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 5,
+           background: 'radial-gradient(circle at 50% 50%, var(--atmosphere-glow), transparent 70%)',
+           filter: 'var(--atmosphere-filter)',
+           transition: 'all 1.5s ease'
+        }} />
 
-      {/* 1. Base UI Layer (Portalled) */}
-      <Navbar />
+        {/* 2. Routes Layer - Safebox portal inside here will stack ON TOP of Navbar */}
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/"          element={<Navigate to="/birthday" replace />} />
+            <Route path="/birthday"  element={<BirthdayPage />} />
+            <Route path="/eid"       element={<EidPage />} />
+            <Route path="/messages"  element={<MessagesPage />} />
+            <Route path="/safebox"   element={<SafeBox />} />
+            <Route path="*"          element={<Navigate to="/birthday" replace />} />
+          </Routes>
+        </AnimatePresence>
 
-      {/* 3. Utility & Global Layer (rendered last = highest top) */}
-      {showEnhancements && (
-        <Suspense fallback={null}>
-          <FloatingMusicPlayer />
-          <RandomLoveToast />
-          <UpdateNotification />
-          <NotificationBell />
-          <GlobalToast />
-          <LiveNote />
-        </Suspense>
-      )}
+        {/* 1. Base UI Layer (Portalled) */}
+        <Navbar />
+
+        {/* 3. Utility & Global Layer (rendered last = highest top) */}
+        {showEnhancements && (
+          <Suspense fallback={null}>
+            <FloatingMusicPlayer />
+            <RandomLoveToast />
+            <UpdateNotification />
+            <NotificationBell />
+            <GlobalToast />
+            <LiveNote />
+            <PulseOverlay />
+          </Suspense>
+        )}
+      </div>
     </Suspense>
   )
 }

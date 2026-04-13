@@ -81,6 +81,10 @@ export default function SafeBox() {
 
     // Track weekly mood stats for the professional report (Tablet-only)
     trackMood(moodKey);
+    
+    // Store as active mood for Global Theme syncing
+    localStorage.setItem('mori_active_mood', moodKey);
+    localStorage.setItem('mori_mood_set_time', Date.now().toString());
 
     setStage('comfort_view')
   }

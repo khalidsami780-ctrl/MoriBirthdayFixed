@@ -154,7 +154,7 @@ export function useTelegramBot() {
     }
   }, []);
 
-  const pollTelegramReplies = useCallback((onReply, onNote) => {
+  const pollTelegramReplies = useCallback((onReply, onNote, onPulse) => {
     let intervalId = null;
 
     const poll = async () => {
@@ -184,11 +184,19 @@ export function useTelegramBot() {
               });
             }
 
-            // Check for Live Notes from Khalid (Message Text)
+            // Check for Live Notes or Pulse /heartbeat from Khalid
             if (update.message && update.message.text && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
                 const text = update.message.text.trim();
-                // Check if it's a note (e.g., starts with /note or just any text from Khalid)
-                // We'll support both regular text and /note command
+                
+                // 1. Check for Digital Touch / Pulse command
+                if (text === '/pulse' || text === '/heart') {
+                    const pulseSignal = { id: update.message.message_id, timestamp: Date.now() };
+                    localStorage.setItem('mori_pulse_signal', JSON.stringify(pulseSignal));
+                    if (onPulse) onPulse(pulseSignal);
+                    continue; // Skip further processing for this message
+                }
+
+                // 2. Check if it's a note (e.g., starts with /note or just any text from Khalid)
                 let noteContent = "";
                 if (text.startsWith('/note ')) {
                     noteContent = text.replace('/note ', '').trim();
