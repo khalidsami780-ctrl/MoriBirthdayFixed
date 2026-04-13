@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
 import Stars from '../components/Stars.jsx'
 
 // ── Cloudinary photo + video imports ───────────────────────────────────
@@ -49,7 +50,7 @@ function Lightbox({ item, idx, total, onClose, onPrev, onNext }) {
     }
   }, [item.id])
 
-  return (
+  return createPortal(
     <motion.div
       style={LB.overlay}
       initial={{ opacity: 0 }}
@@ -155,20 +156,21 @@ function Lightbox({ item, idx, total, onClose, onPrev, onNext }) {
           <polygon points="9,18 15,12 9,6"/>
         </svg>
       </motion.button>
-    </motion.div>
+    </motion.div>,
+    document.body
   )
 }
 
 const LB = {
   overlay: {
-    position: 'fixed', inset: 0, zIndex: 2000,
+    position: 'fixed', inset: 0,
     background: 'rgba(2, 6, 18, 0.95)',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   arrow: {
     position: 'fixed', top: '50%', transform: 'translateY(-50%)',
-    zIndex: 10, width: 44, height: 44, borderRadius: '50%',
+    width: 44, height: 44, borderRadius: '50%',
     background: 'rgba(8,18,52,0.75)', border: '1px solid rgba(90,150,240,0.18)',
     color: 'rgba(168,200,248,0.9)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -185,7 +187,7 @@ const LB = {
     boxShadow: '0 30px 90px rgba(0,0,0,0.75), 0 0 0 0.5px rgba(90,150,240,0.07)',
   },
   close: {
-    position: 'absolute', top: 12, right: 12, zIndex: 5,
+    position: 'absolute', top: 12, right: 12,
     width: 34, height: 34, borderRadius: '50%',
     background: 'rgba(6,14,44,0.85)',
     border: '1px solid rgba(90,150,240,0.2)',
@@ -257,7 +259,7 @@ function MemCard({ item, index, onClick }) {
       initial={{ opacity: 0, y: 22, scale: 0.97 }}
       animate={vis ? { opacity: 1, y: 0, scale: 1 } : {}}
       transition={{ duration: 0.55, delay: (index % 3) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ scale: 1.034, zIndex: 2 }}
+      whileHover={{ scale: 1.034 }}
       whileTap={{ scale: 0.97 }}
       onClick={() => onClick(index)}
       className="memory-card-wrap"
@@ -402,10 +404,7 @@ export default function EidMemories({ sectionRef }) {
         whileInView={{ opacity:1, y:0 }}
         viewport={{ once:true, amount:0.12 }}
         transition={{ duration:0.82, ease:[0.22,1,0.36,1] }}
-        style={{
-          position:'relative', zIndex:1, width:'100%', maxWidth:560,
-          display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem',
-        }}
+        style={{ position: 'relative', width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.75rem' }}
       >
         {/* Header */}
         <div style={{ textAlign:'center', width:'100%' }}>

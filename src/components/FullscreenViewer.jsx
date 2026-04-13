@@ -185,14 +185,14 @@ export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, on
 
 const LB = {
   overlay: {
-    position: 'fixed', inset: 0, zIndex: 999999,
+    position: 'fixed', inset: 0,
     background: 'rgba(2, 6, 18, 0.95)',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   arrow: {
     position: 'absolute', top: '50%', transform: 'translateY(-50%)',
-    zIndex: 1000, width: 44, height: 44, borderRadius: '50%',
+    width: 44, height: 44, borderRadius: '50%',
     background: 'rgba(8,18,52,0.75)', border: '1px solid rgba(90,150,240,0.18)',
     color: 'rgba(168,200,248,0.9)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -209,7 +209,7 @@ const LB = {
     boxShadow: '0 30px 90px rgba(0,0,0,0.75), 0 0 0 0.5px rgba(90,150,240,0.07)',
   },
   close: {
-    position: 'absolute', top: 12, right: 12, zIndex: 5,
+    position: 'absolute', top: 12, right: 12,
     width: 34, height: 34, borderRadius: '50%',
     background: 'rgba(6,14,44,0.85)',
     border: '1px solid rgba(90,150,240,0.2)',

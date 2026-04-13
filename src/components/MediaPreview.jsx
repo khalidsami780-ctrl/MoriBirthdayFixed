@@ -96,7 +96,7 @@ export default function MediaPreview({ media = [] }) {
         <motion.div 
           style={S.singleWrap}
           onClick={() => setViewerIndex(0)}
-          whileHover={{ scale: 1.02, zIndex: 2, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' }}
+          whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' }}
           whileTap={{ scale: 0.97 }}
         >
           <PreviewThumbnail item={media[0]} />
@@ -116,7 +116,7 @@ export default function MediaPreview({ media = [] }) {
               key={index}
               style={S.gridItem}
               onClick={() => setViewerIndex(index)}
-              whileHover={{ scale: 1.034, zIndex: 3 }}
+              whileHover={{ scale: 1.034 }}
               whileTap={{ scale: 0.97 }}
             >
               <PreviewThumbnail item={item} />
@@ -212,7 +212,7 @@ const S = {
   moreOverlay: {
     position: 'absolute', inset: 0, background: 'rgba(2, 6, 15, 0.75)',
     backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    pointerEvents: 'none', zIndex: 10
+    pointerEvents: 'none'
   },
   moreText: {
     color: '#fff', fontSize: '2rem', fontWeight: 'bold', fontFamily: 'system-ui, sans-serif'
@@ -233,7 +233,6 @@ const S = {
     background: 'linear-gradient(to top, rgba(2,6,20,0.88) 0%, rgba(2,6,20,0.0) 100%)',
     backdropFilter: 'blur(2px)',
     pointerEvents: 'none',
-    zIndex: 5,
   },
   captionText: {
     display: 'block',

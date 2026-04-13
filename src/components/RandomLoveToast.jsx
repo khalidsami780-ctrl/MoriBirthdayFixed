@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { randomMessages } from '../data/randomMessages.js'
+import { createPortal } from 'react-dom'
 
 export default function RandomLoveToast() {
   const [currentMessage, setCurrentMessage] = useState(null)
@@ -46,7 +47,7 @@ export default function RandomLoveToast() {
     }, 15000);
   }
 
-  return (
+  return createPortal(
     <div style={S.container}>
       <AnimatePresence>
         {currentMessage && (
@@ -71,7 +72,8 @@ export default function RandomLoveToast() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -80,7 +82,6 @@ const S = {
     position: 'fixed',
     bottom: '1.5rem',
     right: '1.5rem',
-    zIndex: 99998, // Very high but logically placed
     pointerEvents: 'none',
   },
   card: {

@@ -198,7 +198,7 @@ export default function PdfSection({ sectionRef }) {
 ═══════════════════════════════════════════════════════════════ */
 const S = {
   wrapper: {
-    position: 'relative', zIndex: 1,
+    position: 'relative',
     width: '100%', maxWidth: 500,
     display: 'flex', flexDirection: 'column', alignItems: 'center',
   },
@@ -216,7 +216,6 @@ const S = {
     position: 'absolute', inset: -2,
     borderRadius: 26,
     pointerEvents: 'none',
-    zIndex: 0,
   },
 
   /* Rotating conic gradient — sweeps around the border */
@@ -224,18 +223,18 @@ const S = {
     position: 'absolute', inset: -1,
     borderRadius: 26,
     background: 'conic-gradient(from 0deg, transparent 60%, rgba(91,156,246,0.35) 80%, transparent 100%)',
-    pointerEvents: 'none', zIndex: 0,
+    pointerEvents: 'none',
   },
 
   sparkleHost: {
     position: 'absolute', inset: 0,
-    pointerEvents: 'none', zIndex: 2,
+    pointerEvents: 'none',
     overflow: 'visible',
   },
 
   /* The actual glass card */
   cardInner: {
-    position: 'relative', zIndex: 3,
+    position: 'relative',
     background: 'rgba(6, 14, 46, 0.72)',
     backdropFilter: 'blur(28px) saturate(160%)',
     WebkitBackdropFilter: 'blur(28px) saturate(160%)',
@@ -322,7 +321,7 @@ const S = {
     fontWeight: 600,
     color: '#e8f4ff',
     letterSpacing: '0.04em',
-    position: 'relative', zIndex: 1,
+    position: 'relative',
   },
 
   ornamentBottom: {

@@ -89,9 +89,8 @@ body {
     radial-gradient(ellipse 85% 55% at 50% -5%, rgba(30,80,180,0.16) 0%, transparent 70%),
     radial-gradient(ellipse 55% 40% at 85% 95%, rgba(58,123,213,0.07) 0%, transparent 60%);
   pointer-events: none;
-  z-index: 0;
 }
-.section > * { position: relative; z-index: 1; }
+.section > * { position: relative; }
 
 .glass-card {
   background: var(--glass-bg);
@@ -141,7 +140,7 @@ body {
 
 .scroll-hint {
   position: absolute; bottom: 1.75rem; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
 .scroll-hint__dot {
   width: 3px; height: 3px; border-radius: 50%; background: var(--blue-400);
@@ -156,7 +155,7 @@ body {
 
 .nav-dots {
   position: fixed; right: 1.1rem; top: 50%; transform: translateY(-50%);
-  display: flex; flex-direction: column; gap: 9px; z-index: 100;
+  display: flex; flex-direction: column; gap: 9px;
 }
 .nav-dot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -179,13 +178,13 @@ body {
 }
 
 .noise-overlay {
-  position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+  position: fixed; inset: 0; pointer-events: none;
   opacity: 0.02;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-size: 180px;
 }
 
-.stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .star {
   position: absolute; border-radius: 50%; background: white;
   animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
@@ -195,11 +194,11 @@ body {
   50%       { opacity: 0.65; transform: scale(1.4); }
 }
 
-.orb       { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(90px); opacity: 0.11; z-index: 0; }
+.orb       { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(90px); opacity: 0.11; }
 .orb-blue  { background: radial-gradient(circle, #3a7bd5 0%, transparent 70%); }
 .orb-gold  { background: radial-gradient(circle, #c9a84c 0%, transparent 70%); }
 
-.hearts-container { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.hearts-container { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .heart {
   position: absolute; bottom: -50px;
   font-size: var(--size, 14px); opacity: 0;
@@ -457,12 +456,110 @@ a[style*="border: 1px solid rgba(91,156,246"]:hover {
 /* ── Notification Target Highlight ─────────── */
 @keyframes highlightGlow {
   0% { box-shadow: 0 0 0 0 rgba(255,105,180, 0); border-color: rgba(91,156,246,0.16); transform: scale(1); }
-  15% { box-shadow: 0 0 32px 4px rgba(255,105,180, 0.45); border-color: rgba(255,105,180, 0.6); transform: scale(1.015); z-index: 50; }
-  85% { box-shadow: 0 0 32px 4px rgba(255,105,180, 0.45); border-color: rgba(255,105,180, 0.6); transform: scale(1.015); z-index: 50; }
+  15% { box-shadow: 0 0 32px 4px rgba(255,105,180, 0.45); border-color: rgba(255,105,180, 0.6); transform: scale(1.015); }
+  85% { box-shadow: 0 0 32px 4px rgba(255,105,180, 0.45); border-color: rgba(255,105,180, 0.6); transform: scale(1.015); }
   100% { box-shadow: 0 0 0 0 rgba(255,105,180, 0); border-color: rgba(91,156,246,0.16); transform: scale(1); }
 }
 
 .highlight-glow {
   animation: highlightGlow 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
   position: relative;
+}
+
+/* ── Step 6: Responsive Audit & Navbar Fixes ── */
+
+/* Global Image Scaling */
+img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Arabic RTL Overflow Fix */
+.t-arabic, .message-poem, .poetry-lines, .dua-text, .message-card p, .advice-card p {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Mobile Bottom Padding for Navbar */
+@media (max-width: 767px) {
+  .scroll-container, main, section, .page-container {
+    padding-bottom: 5.5rem !important;
+  }
+}
+
+/* ── Desktop Capsule Navbar (≥768px) ── */
+@media (min-width: 768px) {
+  .section {
+    padding-top: 6rem; /* Ensure content clears the navbar pill */
+  }
+
+  nav.navbar-glass-pill {
+    bottom: auto !important;
+    top: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: fit-content !important;
+    max-width: 500px !important;
+    height: 54px !important; /* Slightly more compact */
+    border-radius: 50px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(8, 18, 52, 0.45) !important;
+    backdrop-filter: blur(20px) saturate(160%) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    padding: 0 20px !important;
+  }
+
+  .navbar-pill-inner {
+    gap: 8px !important; /* Items closer together */
+    width: auto !important;
+    justify-content: center !important;
+  }
+
+  /* Compact Desktop Nav Items */
+  .navbar-glass-pill [style*="minWidth: '64px'"] {
+    min-width: 80px !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Active State Highlight (Internal Pill) */
+  nav.navbar-glass-pill div[style*="var(--blue-200)"] {
+    position: relative;
+    background: rgba(168, 200, 248, 0.08);
+    border-radius: 20px;
+  }
+
+  /* Show desktop underline (custom tweak) */
+  div[style*="bottom: '-12px'"] {
+    display: block !important;
+    bottom: 2px !important; /* Positioned inside the pill */
+    height: 2px !important;
+    opacity: 0.6;
+  }
+
+  /* Hide mobile glow */
+  div[style*="background: radial-gradient(circle, rgba(168, 200, 248, 0.15)"] {
+    display: none !important;
+  }
+}
+
+.text-rtl { direction: rtl; }
+
+/* ── Birthday Counter Responsive Refinements ── */
+@media (max-width: 767px) {
+  .modal-abs-close {
+    top: 10px !important;
+    right: 10px !important;
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.5rem !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+  }
+}
+
+/* Ensure digits don't wrap weirdly on micro-screens */
+@media (max-width: 360px) {
+  [style*="numSize"] {
+    font-size: 1rem !important;
+  }
 }

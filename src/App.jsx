@@ -1,24 +1,25 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { analytics, db } from './firebase.js'
-import { logEvent } from 'firebase/analytics'
-import { collection, addDoc } from 'firebase/firestore'
-import GlobalToast from './components/GlobalToast.jsx'
-import FloatingMusicPlayer from './components/FloatingMusicPlayer.jsx'
-import RandomLoveToast from './components/RandomLoveToast.jsx'
-import SafeBox from './components/SafeBox.jsx'
-import UpdateNotification from './components/UpdateNotification.jsx'
 
 /* ── Code splitting: each page loads only when navigated to ── */
 const BirthdayPage  = lazy(() => import('./pages/BirthdayPage.jsx'))
 const EidPage       = lazy(() => import('./pages/EidPage.jsx'))
 const MessagesPage  = lazy(() => import('./pages/MessagesPage.jsx'))
+const SafeBox       = lazy(() => import('./components/SafeBox.jsx'))
+const GlobalToast   = lazy(() => import('./components/GlobalToast.jsx'))
+const RandomLoveToast = lazy(() => import('./components/RandomLoveToast.jsx'))
+const FloatingMusicPlayer = lazy(() => import('./components/FloatingMusicPlayer.jsx'))
+const UpdateNotification = lazy(() => import('./components/UpdateNotification.jsx'))
+const NotificationBell = lazy(() => import('./components/NotificationBell.jsx'))
+const Navbar = lazy(() => import('./components/Navbar.jsx'))
+
+import { useTelegramBot } from './hooks/useTelegramBot.js'
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9998,
+      position: 'fixed', inset: 0,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg-deep)',
     }}>
@@ -37,88 +38,43 @@ function PageLoader() {
   )
 }
 
-// Minimal User-Agent parser
-function parseUserAgent(ua) {
-  let os = 'Unknown', browser = 'Unknown'
-  const device = /Mobile|Android|iP(ad|hone|od)/i.test(ua) ? 'Mobile' : 'Desktop'
-
-  if (/Windows/i.test(ua)) os = 'Windows'
-  else if (/Mac/i.test(ua)) os = 'MacOS'
-  else if (/Linux/i.test(ua)) os = 'Linux'
-  else if (/Android/i.test(ua)) os = 'Android'
-  else if (/iP(ad|hone|od)/i.test(ua)) os = 'iOS'
-
-  if (/Edg/i.test(ua)) browser = 'Edge'
-  else if (/Chrome/i.test(ua)) browser = 'Chrome'
-  else if (/Safari/i.test(ua)) browser = 'Safari'
-  else if (/Firefox/i.test(ua)) browser = 'Firefox'
-
-  return { device, os, browser }
-}
-
 export default function App() {
   const location = useLocation()
+  const [showEnhancements, setShowEnhancements] = useState(false)
+  const { checkFirstVisitToday, checkWeeklyReport } = useTelegramBot()
 
   useEffect(() => {
-    // Abort if no analytics loaded
-    if (!analytics) return
+    // Initial tracking on app mount
+    checkFirstVisitToday()
+    checkWeeklyReport()
+  }, [checkFirstVisitToday, checkWeeklyReport])
 
-    const trackUniqueVisit = async () => {
-      // 1. Generate or retrieve permanent User ID
-      let userId = localStorage.getItem("mori_user_id");
-      if (!userId) {
-        userId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-        localStorage.setItem("mori_user_id", userId);
-      }
+  useEffect(() => {
+    let cancelled = false
+    let cleanup = () => {}
 
-      try {
-        const { device, os, browser } = parseUserAgent(navigator.userAgent)
-        let country = 'Unknown', city = 'Unknown'
-
-        // Attempt location fetching silently
-        try {
-          const res = await fetch('/api/location')
-          if (res.ok) {
-            const data = await res.json()
-            country = data.country || 'Unknown'
-            city = data.city || 'Unknown'
-          }
-        } catch (locErr) {
-          // Ignored. E.g. adblocker blocked the API call.
-        }
-
-        const visitData = {
-          userId,
-          deviceType: device,
-          browser,
-          OS: os,
-          country,
-          city,
-          timestamp: Date.now()
-        }
-
-        // Send detailed Firebase Analytics event
-        logEvent(analytics, 'unique_visit', visitData)
-
-        // Save detailed record to Firestore Database
-        if (db) {
-          await addDoc(collection(db, "visitors"), visitData)
-        }
-
-      } catch (e) {
-        console.error('Tracking failed', e)
-      }
+    const startDeferredWork = () => {
+      if (cancelled) return
+      setShowEnhancements(true)
     }
 
-    trackUniqueVisit()
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(startDeferredWork, { timeout: 1500 })
+      cleanup = () => window.cancelIdleCallback(idleId)
+    } else {
+      const timeoutId = window.setTimeout(startDeferredWork, 180)
+      cleanup = () => window.clearTimeout(timeoutId)
+    }
+
+    return () => {
+      cancelled = true
+      cleanup()
+    }
   }, [])
 
   return (
     <Suspense fallback={<PageLoader />}>
-      <GlobalToast />
-      <RandomLoveToast />
-      <FloatingMusicPlayer />
-      <UpdateNotification />
+      {/* 2. Routes Layer - Safebox portal inside here will stack ON TOP of Navbar */}
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/"          element={<Navigate to="/birthday" replace />} />
@@ -129,6 +85,20 @@ export default function App() {
           <Route path="*"          element={<Navigate to="/birthday" replace />} />
         </Routes>
       </AnimatePresence>
+
+      {/* 1. Base UI Layer (Portalled) */}
+      <Navbar />
+
+      {/* 3. Utility & Global Layer (rendered last = highest top) */}
+      {showEnhancements && (
+        <Suspense fallback={null}>
+          <FloatingMusicPlayer />
+          <RandomLoveToast />
+          <UpdateNotification />
+          <NotificationBell />
+          <GlobalToast />
+        </Suspense>
+      )}
     </Suspense>
   )
 }

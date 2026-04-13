@@ -226,7 +226,7 @@ export default function MusicSection({ sectionRef }) {
         whileInView={{ opacity:1, y:0 }}
         viewport={{ once:true, amount:0.12 }}
         transition={{ duration:0.88, ease:[0.22,1,0.36,1] }}
-        style={{ position:'relative', zIndex:1, width:'100%', maxWidth:500, display:'flex', flexDirection:'column', alignItems:'center', gap:'1.75rem' }}
+        style={{ position:'relative', width:'100%', maxWidth:500, display:'flex', flexDirection:'column', alignItems:'center', gap:'1.75rem' }}
       >
         {/* Header */}
         <div style={{ textAlign:'center', width:'100%' }}>

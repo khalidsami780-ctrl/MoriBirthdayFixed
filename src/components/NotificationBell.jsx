@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNotifications } from '../hooks/useNotifications.js'
 import { useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 
 // Soft native browser time formatter (e.g. "منذ ساعتين", "منذ 3 أيام")
 function getRelativeTime(timestamp) {
@@ -40,8 +41,8 @@ export default function NotificationBell() {
     }
   }
 
-  return (
-    <div style={{ position: 'relative', zIndex: 1000 }} ref={dropdownRef}>
+  return createPortal(
+    <div style={S.container} ref={dropdownRef}>
       {/* ── Bell Icon Button ── */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
@@ -105,12 +106,11 @@ export default function NotificationBell() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.28 }}
-                      whileHover={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+                      whileHover={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
                       style={{
                         ...S.notifItem,
-                        borderRight: notif.isRead ? '3px solid transparent' : '3px solid #f4c2d7',
-                        background: notif.isRead ? 'transparent' : 'rgba(244, 194, 215, 0.05)',
-                        opacity: notif.isRead ? 0.55 : 1
+                        background: notif.isRead ? 'transparent' : 'rgba(168, 200, 248, 0.05)',
+                        opacity: notif.isRead ? 0.6 : 1
                       }}
                     >
                       <div style={S.notifInfo}>
@@ -139,11 +139,17 @@ export default function NotificationBell() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
-  )
+    </div>,
+    document.body
+  );
 }
 
 const S = {
+  container: {
+    position: 'fixed',
+    top: '20px',
+    right: '25px',
+  },
   bellBtn: {
     position: 'relative',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -165,13 +171,13 @@ const S = {
     fontFamily: 'system-ui, sans-serif'
   },
   dropdown: {
-    position: 'absolute', top: 'calc(100% + 12px)', right: 0,
-    width: '320px', minHeight: '150px', maxHeight: '450px',
-    background: 'rgba(5, 12, 38, 0.95)',
-    backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
+    position: 'absolute', top: 'calc(100% + 15px)', right: 0,
+    width: '320px', minHeight: '150px', maxHeight: '480px',
+    background: 'rgba(4, 10, 30, 0.98)', // Deeper, darker background
+    backdropFilter: 'blur(35px)', WebkitBackdropFilter: 'blur(35px)',
     border: '1px solid rgba(168, 200, 248, 0.25)',
-    borderRadius: '20px',
-    boxShadow: '0 25px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+    borderRadius: '24px',
+    boxShadow: '0 30px 100px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)',
     display: 'flex', flexDirection: 'column',
     overflow: 'hidden',
     transformOrigin: 'top right'
@@ -198,9 +204,11 @@ const S = {
   },
   notifItem: {
     padding: '16px 20px',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    cursor: 'pointer', transition: 'background 0.2s, opacity 0.3s',
-    direction: 'rtl'
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', // Items start from the top-left in RTL
+    gap: '12px', // Gap between dot and text
+    cursor: 'pointer', transition: 'all 0.2s ease',
+    direction: 'rtl',
+    borderBottom: '1px solid rgba(168, 200, 248, 0.08)'
   },
   notifInfo: {
     display: 'flex', flexDirection: 'column', gap: '6px'
@@ -215,8 +223,10 @@ const S = {
   },
   unreadDot: {
     width: '8px', height: '8px', borderRadius: '50%',
-    background: '#f4c2d7', boxShadow: '0 0 8px rgba(244, 194, 215, 0.8)',
-    marginLeft: '5px'
+    background: 'linear-gradient(135deg, #ff4d94, #f4c2d7)',
+    boxShadow: '0 0 12px rgba(255, 77, 148, 0.6)',
+    marginTop: '8px', // Align with first line of text
+    flexShrink: 0
   },
   emptyState: {
     padding: '40px 20px', textAlign: 'center',

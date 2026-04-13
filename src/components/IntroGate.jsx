@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
 
 const STARS = Array.from({ length: 90 }, (_, i) => ({
   id: i,
@@ -52,7 +53,7 @@ export default function IntroGate({ onEnterComplete }) {
     setTimeout(() => setDone(true), 2100)
   }, [])
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {phase !== 'fade' && (
         <motion.div
@@ -237,13 +238,14 @@ export default function IntroGate({ onEnterComplete }) {
           <div style={S.vignette} />
         </motion.div>
       )}
-    </AnimatePresence>
-  )
+    </AnimatePresence>,
+    document.body
+  );
 }
 
 const S = {
   root: {
-    position: 'fixed', inset: 0, zIndex: 9999,
+    position: 'fixed', inset: 0,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', cursor: 'pointer',
     userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation',
@@ -272,13 +274,13 @@ const S = {
     pointerEvents: 'none', filter: 'blur(1px)',
   },
   rainHeart: {
-    position: 'fixed', top: 0, pointerEvents: 'none', zIndex: 10000,
+    position: 'fixed', top: 0, pointerEvents: 'none',
     lineHeight: 1, filter: 'drop-shadow(0 0 7px rgba(79,163,224,0.7))',
   },
   cardOuter: {
     position: 'relative', width: 'min(90vw, 410px)',
     borderRadius: 26, padding: 2.5,
-    background: 'transparent', zIndex: 10,
+    background: 'transparent',
   },
   shimmer: {
     position: 'absolute', inset: 0, borderRadius: 26, padding: 1.5,

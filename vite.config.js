@@ -11,6 +11,7 @@ export default defineConfig({
       strategies: 'generateSW',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+        cleanupOutdatedCaches: true,
         // Tell the waiting SW to activate when we send SKIP_WAITING
         skipWaiting: false,
         clientsClaim: true,

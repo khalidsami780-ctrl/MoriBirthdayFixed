@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createPortal } from 'react-dom'
 
 /**
  * UpdateNotification
@@ -11,6 +12,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 export default function UpdateNotification() {
   const [showUpdate, setShowUpdate] = useState(false)
   const [registration, setRegistration] = useState(null)
+  const intervalRef = useRef(null)
+  const registrationRef = useRef(null)
+  const audioRef = useRef(null)
 
   const checkUpdate = useCallback((reg) => {
     if (!reg) return
@@ -18,20 +22,57 @@ export default function UpdateNotification() {
     reg.update().catch(err => console.debug('Worker update failed', err))
   }, [])
 
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
+  const startPolling = useCallback((reg) => {
+    stopPolling()
+    if (!reg || document.visibilityState !== 'visible') return
+    intervalRef.current = setInterval(() => checkUpdate(reg), 60 * 1000)
+  }, [checkUpdate, stopPolling])
+
+  const playNotificationSound = useCallback(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio('https://res.cloudinary.com/djdktudjh/video/upload/v1714652285/notification-chime_u2v0a5.mp3')
+      audioRef.current.preload = 'auto'
+    }
+
+    audioRef.current.currentTime = 0
+    audioRef.current.volume = 0.4
+    audioRef.current.play().catch(error => console.debug('Audio play blocked by browser', error))
+  }, [])
+
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
-    let intervalId
+    let detachUpdateFound = null
+
+    const handleVisibilityChange = () => {
+      const reg = registrationRef.current
+      if (!reg) return
+
+      if (document.visibilityState === 'visible') {
+        checkUpdate(reg)
+        startPolling(reg)
+      } else {
+        stopPolling()
+      }
+    }
+
+    const handleOnline = () => {
+      const reg = registrationRef.current
+      if (!reg) return
+      checkUpdate(reg)
+      startPolling(reg)
+    }
 
     navigator.serviceWorker.ready.then((reg) => {
+      registrationRef.current = reg
       setRegistration(reg)
-
-      // Function to play a soft chime when update is found
-      const playNotificationSound = () => {
-        const audio = new Audio('https://res.cloudinary.com/djdktudjh/video/upload/v1714652285/notification-chime_u2v0a5.mp3')
-        audio.volume = 0.4
-        audio.play().catch(e => console.debug('Audio play blocked by browser', e))
-      }
 
       // 1. Initial check for waiting worker
       if (reg.waiting && navigator.serviceWorker.controller) {
@@ -47,21 +88,31 @@ export default function UpdateNotification() {
         }
       }
 
-      reg.addEventListener('updatefound', () => {
+      const handleUpdateFound = () => {
         const newWorker = reg.installing
         if (newWorker) {
           newWorker.addEventListener('statechange', () => onStateChange(newWorker))
         }
-      })
+      }
 
-      // 3. Poll for updates every 60 seconds (Khalid's updates are frequent)
-      intervalId = setInterval(() => checkUpdate(reg), 60 * 1000)
+      reg.addEventListener('updatefound', handleUpdateFound)
+      detachUpdateFound = () => reg.removeEventListener('updatefound', handleUpdateFound)
+
+      // 3. Poll only while the tab is visible to avoid background wakeups.
+      checkUpdate(reg)
+      startPolling(reg)
     })
 
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('online', handleOnline)
+
     return () => {
-      if (intervalId) clearInterval(intervalId)
+      stopPolling()
+      detachUpdateFound?.()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('online', handleOnline)
     }
-  }, [checkUpdate])
+  }, [checkUpdate, playNotificationSound, startPolling, stopPolling])
 
   const handleUpdate = () => {
     if (registration?.waiting) {
@@ -74,7 +125,7 @@ export default function UpdateNotification() {
     }, 200)
   }
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {showUpdate && (
         <motion.div
@@ -87,7 +138,6 @@ export default function UpdateNotification() {
             bottom: '5.5rem',
             left: '50%',
             transform: 'translateX(-50%)',
-            zIndex: 9999,
             background: 'rgba(5, 12, 45, 0.96)',
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
@@ -111,51 +161,17 @@ export default function UpdateNotification() {
           >
             💙
           </motion.div>
-
-          {/* Text Container */}
+          
           <div style={{ flex: 1, paddingRight: '4px' }}>
-            <p style={{
-              fontFamily: `'Scheherazade New', serif`,
-              fontSize: '0.92rem',
-              fontWeight: 500,
-              color: 'rgba(215, 235, 255, 1)',
-              margin: 0,
-              lineHeight: 1.4,
-            }}>
-              خالد ضاف لك حاجة جديدة..
-            </p>
-            <p style={{
-              fontFamily: `'Scheherazade New', serif`,
-              fontSize: '0.8rem',
-              color: 'rgba(168,200,248,0.65)',
-              margin: '2px 0 0',
-            }}>
-              دوسي تحديث عشان تشوفيها دلوقتي ✨
-            </p>
+            <p style={{ fontFamily: `'Scheherazade New', serif`, fontSize: '0.92rem', fontWeight: 500, color: 'rgba(215, 235, 255, 1)', margin: 0, lineHeight: 1.4 }}>خالد ضاف لك حاجة جديدة..</p>
+            <p style={{ fontFamily: `'Scheherazade New', serif`, fontSize: '0.8rem', color: 'rgba(168,200,248,0.65)', margin: '2px 0 0' }}>دوسي تحديث عشان تشوفيها دلوقتي ✨</p>
           </div>
 
-          {/* Action Button */}
-          <motion.button
-            onClick={handleUpdate}
-            whileHover={{ scale: 1.05, background: 'rgba(91,156,246,0.2)' }}
-            whileTap={{ scale: 0.95 }}
-            style={{
-              background: 'rgba(91,156,246,0.12)',
-              border: '1px solid rgba(91,156,246,0.3)',
-              borderRadius: '14px',
-              color: '#97c2ff',
-              fontFamily: `'Scheherazade New', serif`,
-              fontSize: '0.85rem',
-              padding: '8px 14px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              transition: 'all 0.3s ease',
-            }}
-          >
-            تحديث 🔄
-          </motion.button>
+          <motion.button onClick={handleUpdate} whileHover={{ scale:1.05, background:'rgba(91,156,246,0.2)' }} whileTap={{ scale:0.95 }}
+            style={{ background: 'rgba(91,156,246,0.12)', border: '1px solid rgba(91,156,246,0.3)', borderRadius: '14px', color: '#97c2ff', fontFamily: `'Scheherazade New', serif`, fontSize: '0.85rem', padding: '8px 14px', cursor: 'pointer', fontWeight: 600, transition: 'all 0.3s ease' }}>تحديث 🔄</motion.button>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

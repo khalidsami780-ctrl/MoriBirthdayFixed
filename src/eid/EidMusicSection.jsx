@@ -360,7 +360,7 @@ export default function EidMusicSection({ sectionRef }) {
 }
 
 const S = {
-  inner:   { position: 'relative', zIndex: 1, width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.75rem' },
+  inner:   { position: 'relative', width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.75rem' },
   player:  { width: '100%', padding: 'clamp(1.2rem,4vw,1.75rem)', display: 'flex', flexDirection: 'column', gap: '1.1rem' },
   topRow:  { display: 'flex', alignItems: 'center', gap: '1.1rem' },
   time:    { fontFamily: 'monospace', fontSize: '0.66rem', color: 'var(--blue-pale)', opacity: 0.38, minWidth: 27, textAlign: 'center' },

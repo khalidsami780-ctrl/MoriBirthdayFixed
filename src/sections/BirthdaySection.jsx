@@ -66,7 +66,7 @@ export default function BirthdaySection({ sectionRef }) {
         initial="hidden"
         animate={inView ? 'visible' : 'hidden'}
         variants={container}
-        style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
+        style={{ textAlign: 'center', position: 'relative' }}
       >
         <motion.div variants={item}>
           <span style={{

@@ -72,7 +72,6 @@ export default function BirthdayPage() {
             style={{ position: 'relative', width: '100%', height: '100%' }}
           >
             <div className="noise-overlay" aria-hidden="true" />
-            <WorldSwitcher />
             <NavDots active={activeSection} scrollTo={scrollTo} />
 
             <main ref={scrollContainerRef} className="scroll-container" role="main">

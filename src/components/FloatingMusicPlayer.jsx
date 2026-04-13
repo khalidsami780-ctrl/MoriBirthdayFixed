@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { playlist } from '../data/playlist'
+import { createPortal } from 'react-dom'
 
 export default function FloatingMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -111,7 +112,7 @@ export default function FloatingMusicPlayer() {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`
   }
 
-  return (
+  return createPortal(
     <div style={S.container}>
       <audio
         ref={audioRef}
@@ -296,7 +297,8 @@ export default function FloatingMusicPlayer() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -327,7 +329,7 @@ const EqualizerSmall = () => (
 
 // --- Styles ---
 const S = {
-  container: { position: 'fixed', bottom: '1.5rem', left: '1.5rem', zIndex: 10000 },
+  container: { position: 'fixed', bottom: '1.5rem', left: '1.5rem' },
   miniPlayer: {
     width: 58, height: 58, borderRadius: '50%', background: 'rgba(8,18,52,0.75)',
     backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',

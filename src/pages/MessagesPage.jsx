@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo, useEffect } from 'react'
+import { useState, useRef, useCallback, memo, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import MediaPreview from '../components/MediaPreview.jsx'
 import WorldSwitcher from '../shared/WorldSwitcher.jsx'
@@ -11,7 +11,7 @@ import { PINNED_MESSAGE_IDS } from '../data/pinnedConfig.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
-═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 const fadeUp = {
   hidden:  { opacity: 0, y: 28 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.82, ease: [0.22, 1, 0.36, 1] } },
@@ -23,7 +23,7 @@ const stagger = {
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION HEADER
-═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 function SectionHeader({ eyebrow, title }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.4 })
@@ -71,7 +71,7 @@ const SH = {
 
 /* ═══════════════════════════════════════════════════════════════
    MESSAGE CARD
-═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false }) {
   const ref = useRef(null)
   const textRef = useRef(null)
@@ -83,13 +83,11 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
 
   useEffect(() => {
     if (!textRef.current) return;
-
     const observer = new ResizeObserver(() => {
       if (textRef.current) {
         setNeedsReadMore(textRef.current.scrollHeight > 280);
       }
     });
-
     observer.observe(textRef.current);
     return () => observer.disconnect();
   }, [post.text]);
@@ -117,7 +115,6 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
         borderColor: pinned ? 'rgba(201,168,76,0.65)' : 'rgba(91,156,246,0.3)',
       }}
     >
-      {/* Pinned Badge */}
       {pinned && (
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: '5px',
@@ -178,7 +175,6 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
               display: 'block',
               marginTop: isExpanded ? '10px' : '-20px',
               position: 'relative',
-              zIndex: 2,
               direction: 'rtl',
               textAlign: 'right',
               width: '100%',
@@ -190,7 +186,6 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
         )}
       </div>
 
-      {/* ── Extracted Media Gallery Multi-Processor ── */}
       {validMedia.length > 0 && (
         <div style={{ width: '100%', flexShrink: 0, display: 'block', marginTop: '1.5rem' }}>
           <MediaPreview media={validMedia} />
@@ -290,11 +285,10 @@ const MC = {
 
 /* ═══════════════════════════════════════════════════════════════
    ADVICE CARD
-═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.08 })
-
   const validMedia = post.media || []
 
   return (
@@ -312,25 +306,19 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       }}
     >
       <div style={AC.topLine} />
-
       <time style={AC.date}>
         {new Date(post.createdAt).toLocaleDateString('ar-EG', {
           year: 'numeric', month: 'long', day: 'numeric',
         })}
       </time>
-
       <h3 style={AC.title}>{post.title}</h3>
       <div style={AC.divider} />
-
       <p style={AC.content}>{post.text}</p>
-
-      {/* ── Extracted Media Gallery Multi-Processor ── */}
       {validMedia.length > 0 && (
         <div style={{ width: '100%', flexShrink: 0, display: 'block' }}>
           <MediaPreview media={validMedia} />
         </div>
       )}
-
       {post.link && (
         <a href={post.link} target="_blank" rel="noopener noreferrer" style={AC.link}>
           <span>{post.linkLabel || 'اقرأ أكثر'}</span>
@@ -399,7 +387,7 @@ const AC = {
 
 /* ═══════════════════════════════════════════════════════════════
    TAB NAV
-═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 function TabNav({ active, onChange }) {
   const tabs = [
     { id: 'messages', label: 'الرسائل' },
@@ -417,7 +405,7 @@ function TabNav({ active, onChange }) {
             <motion.div layoutId="tab-bg" style={TN.bg}
               transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
           )}
-          <span style={{ position: 'relative', zIndex: 1 }}>{t.label}</span>
+          <span style={{ position: 'relative' }}>{t.label}</span>
         </button>
       ))}
     </div>
@@ -452,40 +440,38 @@ const TN = {
 /* ── Pinned Messages (read from pinnedConfig.js) ── */
 function MessagesSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+  const pinnedPosts = useMemo(() => (
+    PINNED_MESSAGE_IDS
+      .map(id => messagePosts.find(post => post.id === id))
+      .filter(Boolean)
+  ), [])
+  const pinnedIds = useMemo(() => new Set(PINNED_MESSAGE_IDS), [])
 
-  // Collect all pinned posts in order
-  const pinnedPosts = PINNED_MESSAGE_IDS
-    .map(id => messagePosts.find(p => p.id === id))
-    .filter(Boolean)
-
-  const pinnedIds = new Set(PINNED_MESSAGE_IDS)
-
-  const filtered = messagePosts.filter(post => {
-    if (pinnedIds.has(post.id)) return false // excluded — appears at top
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         post.text.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = useMemo(() => messagePosts.filter(post => {
+    if (pinnedIds.has(post.id)) return false
+    const matchesSearch = normalizedSearchTerm === '' ||
+                         post.title.toLowerCase().includes(normalizedSearchTerm) ||
+                         post.text.toLowerCase().includes(normalizedSearchTerm)
     const date = new Date(post.createdAt)
     const matchesYear = dateFilter.year === 'all' || date.getFullYear().toString() === dateFilter.year
     const matchesMonth = dateFilter.month === 'all' || date.getMonth().toString() === dateFilter.month
     return matchesSearch && matchesYear && matchesMonth
-  })
+  }), [dateFilter.month, dateFilter.year, normalizedSearchTerm, pinnedIds])
 
-  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt)
+  const sorted = useMemo(() => [...filtered].sort((a, b) => b.createdAt - a.createdAt), [filtered])
   const visible = sorted.slice(0, visibleCount)
   const hasMore = visibleCount < sorted.length
 
-  // Pinned posts also respect search term
-  const visiblePinned = pinnedPosts.filter(post =>
-    searchTerm === '' ||
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.text.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const visiblePinned = useMemo(() => pinnedPosts.filter(post =>
+    normalizedSearchTerm === '' ||
+    post.title.toLowerCase().includes(normalizedSearchTerm) ||
+    post.text.toLowerCase().includes(normalizedSearchTerm)
+  ), [normalizedSearchTerm, pinnedPosts])
 
   return (
     <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
       <SectionHeader eyebrow="كلمات من القلب" title="الرسائل" />
-
-      {/* ── Pinned Messages ── */}
       {visiblePinned.length > 0 && (
         <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {visiblePinned.map((post, i) => (
@@ -500,7 +486,6 @@ function MessagesSection({ searchTerm, dateFilter }) {
           ))}
         </div>
       )}
-
       {filtered.length === 0 && visiblePinned.length === 0 ? (
         <p style={{ ...SEC.hint, marginTop: '2rem' }}>مفيش رسايل بالاسم ده يا موري.. جربي تبحثي بحاجة تانية 💙</p>
       ) : (
@@ -525,7 +510,6 @@ function MessagesSection({ searchTerm, dateFilter }) {
           </div>
         </>
       )}
-
       {hasMore && (
         <motion.div style={{ textAlign: 'center', marginTop: '1.75rem' }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -545,17 +529,18 @@ function MessagesSection({ searchTerm, dateFilter }) {
 
 function AdviceSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
-  
-  const filtered = advicePosts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         post.text.toLowerCase().includes(searchTerm.toLowerCase())
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+  const filtered = useMemo(() => advicePosts.filter(post => {
+    const matchesSearch = normalizedSearchTerm === '' ||
+                         post.title.toLowerCase().includes(normalizedSearchTerm) ||
+                         post.text.toLowerCase().includes(normalizedSearchTerm)
     const date = new Date(post.createdAt)
     const matchesYear = dateFilter.year === 'all' || date.getFullYear().toString() === dateFilter.year
     const matchesMonth = dateFilter.month === 'all' || date.getMonth().toString() === dateFilter.month
     return matchesSearch && matchesYear && matchesMonth
-  })
+  }), [dateFilter.month, dateFilter.year, normalizedSearchTerm])
 
-  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt)
+  const sorted = useMemo(() => [...filtered].sort((a, b) => b.createdAt - a.createdAt), [filtered])
   const visible = sorted.slice(0, visibleCount)
   const hasMore = visibleCount < sorted.length
 
@@ -586,7 +571,6 @@ function AdviceSection({ searchTerm, dateFilter }) {
           </div>
         </>
       )}
-
       {hasMore && (
         <motion.div style={{ textAlign: 'center', marginTop: '1.75rem' }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
@@ -601,6 +585,209 @@ function AdviceSection({ searchTerm, dateFilter }) {
         </motion.div>
       )}
     </div>
+  )
+}
+
+function CovenantsSection() {
+  const currentYear = new Date().getFullYear()
+  const allYears = Array.from({ length: 8 }, (_, i) => 2026 + i)
+  const archiveYears = allYears.filter(y => y < currentYear).sort((a, b) => b - a)
+
+  return (
+    <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
+      <SectionHeader eyebrow="مواثيق باقية" title="مواثيقنا الغالية" />
+      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
+        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
+        تواريخ محفورة بالقلب.. تفتح في موعدها كل عام 💙
+      </motion.p>
+      <h4 style={{ color: 'rgba(168,200,248,0.6)', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', borderBottom: '1px solid rgba(168,200,248,0.1)', paddingBottom: '10px' }}>
+        مواثيق عام {currentYear}
+      </h4>
+      <div style={SEC.list}>
+        {milestones.map((milestone, idx) => (
+          <CovenantCard key={milestone.id} milestone={milestone} delay={idx * 0.1} />
+        ))}
+      </div>
+      {archiveYears.length > 0 && (
+        <div style={{ marginTop: '60px' }}>
+          <h4 style={{ 
+            color: '#e8c97e', fontSize: '1.4rem', marginBottom: '30px', textAlign: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px'
+          }}>
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(232,201,126,0.3))' }}></span>
+            أرشيف السنين الغالية
+            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(232,201,126,0.3))' }}></span>
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {archiveYears.map((year, idx) => (
+              <ArchiveYearBox key={year} year={year} delay={idx * 0.15} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CovenantCard({ milestone, delay }) {
+  const [timeLeft, setTimeLeft] = useState('')
+  const currentYear = new Date().getFullYear()
+  const [isUnlocked, setIsUnlocked] = useState(false)
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date()
+      const eventDate = new Date(currentYear, milestone.date.month - 1, milestone.date.day)
+      const unlocked = now.getTime() >= eventDate.getTime()
+      setIsUnlocked(unlocked)
+      if (!unlocked) {
+        const diff = eventDate - now
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+        setTimeLeft(`${days} يوم و ${hours} ساعة`)
+      }
+    }
+    update()
+    const timer = setInterval(update, 60000)
+    return () => clearInterval(timer)
+  }, [milestone, currentYear])
+
+  const messageData = milestone.yearlyMessages[currentYear]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.6 }}
+      style={{
+        ...MC.card,
+        borderLeft: isUnlocked ? '3px solid #5b9cf6' : '3px solid rgba(168,200,248,0.2)',
+        background: isUnlocked ? 'rgba(6,14,46,0.75)' : 'rgba(6,14,46,0.45)',
+        padding: '25px',
+        overflow: 'hidden'
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', direction: 'rtl' }}>
+        <span style={{ fontSize: '2.8rem', opacity: isUnlocked ? 1 : 0.4 }}>{milestone.icon}</span>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ ...MC.title, color: isUnlocked ? '#f0e8dc' : 'rgba(168,200,248,0.5)', marginBottom: '15px' }}>
+            {milestone.title}
+          </h3>
+          <div style={{ 
+            ...MC.content, color: isUnlocked ? 'rgba(230,242,255,0.9)' : 'rgba(168,200,248,0.4)', 
+            fontStyle: isUnlocked ? 'normal' : 'italic', lineHeight: '1.8'
+          }}>
+            {isUnlocked ? (
+              <>
+                <div style={{ marginBottom: '15px', whiteSpace: 'pre-wrap' }}>{messageData.text}</div>
+                {messageData.poem && (
+                  <div style={{ 
+                    background: 'rgba(232,201,126,0.05)', padding: '20px', borderRadius: '12px', 
+                    borderRight: '3px solid #e8c97e', fontFamily: `'Scheherazade New', serif`,
+                    fontSize: '1.3rem', color: '#e8c97e', textAlign: 'center',
+                    whiteSpace: 'pre-wrap', lineHeight: '2.4', marginTop: '20px'
+                  }}>
+                    {messageData.poem}
+                  </div>
+                )}
+              </>
+            ) : (
+              `هذا السر لعام ${currentYear} سوف يفتح ليكي في موعده.. كوني في الانتظار 💙`
+            )}
+          </div>
+          {!isUnlocked && (
+            <div style={{ marginTop: '15px', fontSize: '0.85rem', color: '#e8c97e', background: 'rgba(232,201,126,0.1)', padding: '8px 15px', borderRadius: '10px', display: 'inline-block' }}>
+              🔒 يفتح بعد: {timeLeft}
+            </div>
+          )}
+          {isUnlocked && (
+            <div style={{ marginTop: '15px', fontSize: '0.8rem', color: 'rgba(91,156,246,0.6)', textAlign: 'left', opacity: 0.8 }}>
+              — ميثاق المحبة لعام {currentYear} ✨
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function ArchiveYearBox({ year, delay }) {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.5 }}
+      style={{
+        background: 'rgba(10, 20, 50, 0.4)', borderRadius: '15px',
+        border: '1px solid rgba(232, 201, 126, 0.2)', overflow: 'hidden',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+      }}
+    >
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: '20px 25px', cursor: 'pointer', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center',
+          background: isOpen ? 'rgba(232, 201, 126, 0.1)' : 'transparent',
+          transition: 'all 0.3s', direction: 'rtl'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span style={{ fontSize: '1.8rem' }}>📁</span>
+          <div>
+            <h3 style={{ margin: 0, color: '#f0e8dc', fontSize: '1.1rem' }}>أرشيف مكاتيب عام {year}</h3>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(168,200,248,0.5)' }}>يحتوي على ٤ مواثيق غالية محفورة في الذاكرة</span>
+          </div>
+        </div>
+        <motion.span
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          style={{ color: '#5b9cf6', fontSize: '1.2rem' }}
+        >
+          ▼
+        </motion.span>
+      </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{ padding: '0 25px 25px', display: 'flex', flexDirection: 'column', gap: '15px', direction: 'rtl' }}>
+              {milestones.map((milestone) => {
+                const data = milestone.yearlyMessages[year]
+                return (
+                  <div key={milestone.id} style={{ 
+                    background: 'rgba(232, 201, 126, 0.05)', padding: '20px', 
+                    borderRadius: '12px', border: '1px solid rgba(232, 201, 126, 0.1)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', color: '#e8c97e' }}>
+                      <span style={{ fontSize: '1.2rem' }}>{milestone.icon}</span>
+                      <strong style={{ fontSize: '1rem' }}>{milestone.title}</strong>
+                    </div>
+                    <div style={{ color: 'rgba(230,242,255,0.85)', fontSize: '0.95rem', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
+                      {data.text}
+                    </div>
+                    {data.poem && (
+                      <div style={{ 
+                        marginTop: '15px', padding: '15px', background: 'rgba(232,201,126,0.03)', 
+                        borderRadius: '8px', fontFamily: `'Scheherazade New', serif`,
+                        fontSize: '1.1rem', color: '#e8c97e', textAlign: 'center',
+                        lineHeight: '2.2', borderRight: '2px solid #e8c97e'
+                      }}>
+                        {data.poem}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
@@ -628,259 +815,8 @@ const SEC = {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   COVENANTS SECTION
-   ═══════════════════════════════════════════════════════════════ */
-function CovenantsSection() {
-  const currentYear = new Date().getFullYear()
-  
-  // Calculate finished years (archive)
-  // Our data starts from 2026. A year is in archive only if currentYear > that year.
-  const allYears = Array.from({ length: 8 }, (_, i) => 2026 + i)
-  const archiveYears = allYears.filter(y => y < currentYear).sort((a, b) => b - a)
-
-  return (
-    <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
-      <SectionHeader eyebrow="مواثيق باقية" title="مواثيقنا الغالية" />
-      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }}
-        transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
-        تواريخ محفورة بالقلب.. تفتح في موعدها كل عام 💙
-      </motion.p>
-      
-      {/* Current Year Milestones */}
-      <h4 style={{ color: 'rgba(168,200,248,0.6)', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', borderBottom: '1px solid rgba(168,200,248,0.1)', paddingBottom: '10px' }}>
-        مواثيق عام {currentYear}
-      </h4>
-      <div style={SEC.list}>
-        {milestones.map((milestone, idx) => (
-          <CovenantCard key={milestone.id} milestone={milestone} delay={idx * 0.1} />
-        ))}
-      </div>
-
-      {/* Archive Section (Only if archiveYears exists) */}
-      {archiveYears.length > 0 && (
-        <div style={{ marginTop: '60px' }}>
-          <h4 style={{ 
-            color: '#e8c97e', 
-            fontSize: '1.4rem', 
-            marginBottom: '30px', 
-            textAlign: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '15px'
-          }}>
-            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(232,201,126,0.3))' }}></span>
-            أرشيف السنين الغالية
-            <span style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(232,201,126,0.3))' }}></span>
-          </h4>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {archiveYears.map((year, idx) => (
-              <ArchiveYearBox key={year} year={year} delay={idx * 0.15} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CovenantCard({ milestone, delay }) {
-  const [timeLeft, setTimeLeft] = useState('')
-  const currentYear = new Date().getFullYear()
-  const [isUnlocked, setIsUnlocked] = useState(false)
-
-  useEffect(() => {
-    const update = () => {
-      const now = new Date()
-      const eventDate = new Date(currentYear, milestone.date.month - 1, milestone.date.day)
-      const unlocked = now.getTime() >= eventDate.getTime()
-      setIsUnlocked(unlocked)
-
-      if (!unlocked) {
-        const diff = eventDate - now
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
-        setTimeLeft(`${days} يوم و ${hours} ساعة`)
-      }
-    }
-    update()
-    const timer = setInterval(update, 60000)
-    return () => clearInterval(timer)
-  }, [milestone])
-
-  const messageData = milestone.yearlyMessages[currentYear]
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.6 }}
-      style={{
-        ...MC.card,
-        borderLeft: isUnlocked ? '3px solid #5b9cf6' : '3px solid rgba(168,200,248,0.2)',
-        background: isUnlocked ? 'rgba(6,14,46,0.75)' : 'rgba(6,14,46,0.45)',
-        padding: '25px',
-        overflow: 'hidden'
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', direction: 'rtl' }}>
-        <span style={{ fontSize: '2.8rem', opacity: isUnlocked ? 1 : 0.4 }}>{milestone.icon}</span>
-        <div style={{ flex: 1 }}>
-          <h3 style={{ ...MC.title, color: isUnlocked ? '#f0e8dc' : 'rgba(168,200,248,0.5)', marginBottom: '15px' }}>
-            {milestone.title}
-          </h3>
-
-          <div style={{ 
-            ...MC.content, 
-            color: isUnlocked ? 'rgba(230,242,255,0.9)' : 'rgba(168,200,248,0.4)', 
-            fontStyle: isUnlocked ? 'normal' : 'italic',
-            lineHeight: '1.8'
-          }}>
-            {isUnlocked ? (
-              <>
-                <div style={{ marginBottom: '15px', whiteSpace: 'pre-wrap' }}>{messageData.text}</div>
-                {messageData.poem && (
-                  <div style={{ 
-                    background: 'rgba(232,201,126,0.05)', 
-                    padding: '20px', 
-                    borderRadius: '12px', 
-                    borderRight: '3px solid #e8c97e',
-                    fontFamily: `'Scheherazade New', serif`,
-                    fontSize: '1.3rem',
-                    color: '#e8c97e',
-                    textAlign: 'center',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: '2.4',
-                    marginTop: '20px'
-                  }}>
-                    {messageData.poem}
-                  </div>
-                )}
-              </>
-            ) : (
-              `هذا السر لعام ${currentYear} سوف يفتح ليكي في موعده.. كوني في الانتظار 💙`
-            )}
-          </div>
-
-          {!isUnlocked && (
-            <div style={{ marginTop: '15px', fontSize: '0.85rem', color: '#e8c97e', background: 'rgba(232,201,126,0.1)', padding: '8px 15px', borderRadius: '10px', display: 'inline-block' }}>
-              🔒 يفتح بعد: {timeLeft}
-            </div>
-          )}
-
-          {isUnlocked && (
-            <div style={{ marginTop: '15px', fontSize: '0.8rem', color: 'rgba(91,156,246,0.6)', textAlign: 'left', opacity: 0.8 }}>
-              — ميثاق المحبة لعام {currentYear} ✨
-            </div>
-          )}
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-function ArchiveYearBox({ year, delay }) {
-  const [isOpen, setIsOpen] = useState(false)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.5 }}
-      style={{
-        background: 'rgba(10, 20, 50, 0.4)',
-        borderRadius: '15px',
-        border: '1px solid rgba(232, 201, 126, 0.2)',
-        overflow: 'hidden',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-      }}
-    >
-      {/* Folder Header */}
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          padding: '20px 25px',
-          cursor: 'pointer',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: isOpen ? 'rgba(232, 201, 126, 0.1)' : 'transparent',
-          transition: 'all 0.3s',
-          direction: 'rtl'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ fontSize: '1.8rem' }}>📁</span>
-          <div>
-            <h3 style={{ margin: 0, color: '#f0e8dc', fontSize: '1.1rem' }}>أرشيف مكاتيب عام {year}</h3>
-            <span style={{ fontSize: '0.75rem', color: 'rgba(168,200,248,0.5)' }}>يحتوي على ٤ مواثيق غالية محفورة في الذاكرة</span>
-          </div>
-        </div>
-        <motion.span
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          style={{ color: '#5b9cf6', fontSize: '1.2rem' }}
-        >
-          ▼
-        </motion.span>
-      </div>
-
-      {/* Folder Content */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div style={{ padding: '0 25px 25px', display: 'flex', flexDirection: 'column', gap: '15px', direction: 'rtl' }}>
-              {milestones.map((milestone) => {
-                const data = milestone.yearlyMessages[year]
-                return (
-                  <div key={milestone.id} style={{ 
-                    background: 'rgba(232, 201, 126, 0.05)', 
-                    padding: '20px', 
-                    borderRadius: '12px',
-                    border: '1px solid rgba(232, 201, 126, 0.1)'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', color: '#e8c97e' }}>
-                      <span style={{ fontSize: '1.2rem' }}>{milestone.icon}</span>
-                      <strong style={{ fontSize: '1rem' }}>{milestone.title}</strong>
-                    </div>
-                    <div style={{ color: 'rgba(230,242,255,0.85)', fontSize: '0.95rem', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-                      {data.text}
-                    </div>
-                    {data.poem && (
-                      <div style={{ 
-                        marginTop: '15px', 
-                        padding: '15px', 
-                        background: 'rgba(232,201,126,0.03)', 
-                        borderRadius: '8px',
-                        fontFamily: `'Scheherazade New', serif`,
-                        fontSize: '1.1rem',
-                        color: '#e8c97e',
-                        textAlign: 'center',
-                        lineHeight: '2.2',
-                        borderRight: '2px solid #e8c97e'
-                      }}>
-                        {data.poem}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════
    MAIN PAGE
-═══════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 export default function MessagesPage() {
   const location = useLocation()
   const [activeTab, setActiveTab] = useState(location.state?.tab || 'messages')
@@ -903,7 +839,6 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (location.state?.scrollTarget) {
-      // Small timeout to allow the tab to render and Framer Motion to paint the DOM geometry
       const timer = setTimeout(() => {
         const el = document.getElementById(location.state.scrollTarget)
         if (el) {
@@ -925,10 +860,10 @@ export default function MessagesPage() {
       <div className="noise-overlay" aria-hidden="true" />
       <Stars count={50} />
       <div className="orb orb-blue"
-        style={{ position:'fixed', width:500, height:500, top:'-5%', left:'-10%', opacity:0.07, zIndex:0 }}
+        style={{ position:'fixed', width:500, height:500, top:'-5%', left:'-10%', opacity:0.07 }}
         aria-hidden="true" />
       <div className="orb orb-blue"
-        style={{ position:'fixed', width:380, height:380, bottom:'5%', right:'-8%', opacity:0.06, zIndex:0 }}
+        style={{ position:'fixed', width:380, height:380, bottom:'5%', right:'-8%', opacity:0.06 }}
         aria-hidden="true" />
 
       <WorldSwitcher />
@@ -949,22 +884,15 @@ export default function MessagesPage() {
             initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }}
             transition={{ delay:0.15, duration:0.65 }}
             style={{ 
-              display:'flex', 
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent:'center',
-              gap: '1.5rem',
-              marginBottom: '3rem'
+              display:'flex', flexDirection: 'column', alignItems: 'center', justifyContent:'center',
+              gap: '1.5rem', marginBottom: '3rem'
             }}
           >
-            {/* ── Tabs Row ── */}
             <div style={{ 
               ...TN.wrap, 
               flexDirection: isMobile ? 'column' : 'row', 
               borderRadius: isMobile ? '20px' : '999px',
-              marginBottom: 0,
-              width: '100%',
-              maxWidth: '600px',
+              marginBottom: 0, width: '100%', maxWidth: '600px',
             }}>
               {['messages', 'advice', 'covenants'].map(id => {
                 const label = id === 'messages' ? 'الرسائل' : id === 'advice' ? 'النصائح' : 'مواثيقنا'
@@ -981,29 +909,22 @@ export default function MessagesPage() {
                       <motion.div layoutId="tab-bg" style={TN.bg}
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                     )}
-                    <span style={{ position: 'relative', zIndex: 1 }}>{label}</span>
+                    <span style={{ position: 'relative' }}>{label}</span>
                   </button>
                 )
               })}
             </div>
 
-            {/* ── Search & Filter Row (only for Messages & Advice) ── */}
             {activeTab !== 'covenants' && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                style={{
-                  ...F.searchContainer,
-                  maxWidth: '600px', // Matches TabNav for symmetry
-                  margin: 0
-                }}
+                style={{ ...F.searchContainer, maxWidth: '600px', margin: 0 }}
               >
                 <div style={F.searchBox}>
                   <span style={F.searchIcon}>🔍</span>
                   <input
-                     type="text"
-                     placeholder="ابحث في الرسائل..."
-                     value={searchTerm}
+                     type="text" placeholder="ابحث في الرسائل..." value={searchTerm}
                      onChange={(e) => setSearchTerm(e.target.value)}
                      onFocus={(e) => e.target.parentElement.style.boxShadow = '0 0 15px rgba(91,156,246,0.3), inset 0 0 10px rgba(91,156,246,0.1)'}
                      onBlur={(e) => e.target.parentElement.style.boxShadow = 'none'}
@@ -1078,8 +999,7 @@ const F = {
     fontFamily: `'Scheherazade New', serif`, fontSize: '1rem', outline: 'none', cursor: 'pointer',
     transition: 'all 0.25s ease', flex: 1, minWidth: 0, appearance: 'none',
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(168,200,248,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'left 12px center',
+    backgroundRepeat: 'no-repeat', backgroundPosition: 'left 12px center',
   }
 }
 
@@ -1088,19 +1008,13 @@ const MP = {
     overflowY: 'auto', height: '100dvh',
     paddingTop: 'clamp(5.5rem,14vh,8rem)', paddingBottom: '4rem', scrollbarWidth: 'none',
   },
-  inner: {
-    width: '100%', maxWidth: 780, margin: '0 auto',
-    padding: '0 clamp(1rem,4vw,2rem)', position: 'relative', zIndex: 1,
-  },
+  inner: { width: '100%', maxWidth: 780, margin: '0 auto', padding: '0 clamp(1rem,4vw,2rem)', position: 'relative' },
   eyebrow: {
-    fontFamily: `'Scheherazade New','Arial',serif`,
-    direction: 'rtl', textAlign: 'center',
-    fontSize: 'clamp(0.82rem,2.5vw,0.96rem)',
-    color: 'rgba(168,200,248,0.48)', letterSpacing: '0.08em', marginBottom: '0.4rem',
+    fontFamily: `'Scheherazade New','Arial',serif`, direction: 'rtl', textAlign: 'center',
+    fontSize: 'clamp(0.82rem,2.5vw,0.96rem)', color: 'rgba(168,200,248,0.48)', letterSpacing: '0.08em', marginBottom: '0.4rem',
   },
   pageTitle: {
-    fontFamily: `'Scheherazade New','Arial',serif`,
-    direction: 'rtl', textAlign: 'center',
+    fontFamily: `'Scheherazade New','Arial',serif`, direction: 'rtl', textAlign: 'center',
     fontSize: 'clamp(1.9rem,6.5vw,3rem)', fontWeight: 700,
     background: 'linear-gradient(135deg,#d4e8ff 0%,#7ec8f0 40%,#e8c97e 100%)',
     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',

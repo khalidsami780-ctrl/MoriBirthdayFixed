@@ -90,7 +90,7 @@ export default function EidGreeting({ sectionRef }) {
         initial="hidden"
         animate={inView ? 'visible' : 'hidden'}
         variants={container}
-        style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: 560, width: '100%' }}
+        style={{ textAlign: 'center', position: 'relative', maxWidth: 560, width: '100%' }}
       >
         {/* Arabic eyebrow */}
         <motion.p variants={item} style={S.tagline}>{EID_CONTENT.tagline}</motion.p>

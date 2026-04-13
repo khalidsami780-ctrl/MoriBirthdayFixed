@@ -45,7 +45,14 @@ export default function KokoSection({ sectionRef }) {
             {imgError ? (
               <div className="koko-image-placeholder">🐱</div>
             ) : (
-              <img src={kokoImg} alt="KOKO the cat" onError={() => setImgError(true)} />
+              <img
+                src={kokoImg}
+                alt="KOKO the cat"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                onError={() => setImgError(true)}
+              />
             )}
           </motion.div>
 

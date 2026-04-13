@@ -76,7 +76,9 @@ function ToastItem({ toast, onDismiss }) {
       style={S.toastCard}
       onClick={() => {
         onDismiss()
-        navigate(toast.link)
+        if (toast.route) {
+          navigate(toast.route, { state: { scrollTarget: toast.targetId, tab: toast.tab } })
+        }
       }}
       whileHover={{ scale: 1.02, boxShadow: '0 12px 30px rgba(168, 200, 248, 0.4)' }}
     >
@@ -92,7 +94,6 @@ const S = {
     top: '1.5rem',
     left: '50%',
     transform: 'translateX(-50%)',
-    zIndex: 999999,
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',

@@ -28,7 +28,7 @@ export default function WelcomeSection({ sectionRef }) {
         position: 'absolute', bottom: '18%', left: 0, right: 0,
         height: 1,
         background: 'linear-gradient(90deg, transparent, rgba(90,150,240,0.08), transparent)',
-        pointerEvents: 'none', zIndex: 0,
+        pointerEvents: 'none',
       }} />
 
       <motion.div
@@ -36,7 +36,7 @@ export default function WelcomeSection({ sectionRef }) {
         initial="hidden"
         animate={inView ? 'visible' : 'hidden'}
         variants={container}
-        style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: 540, width: '100%' }}
+        style={{ textAlign: 'center', position: 'relative', maxWidth: 540, width: '100%' }}
       >
         <motion.p variants={item} className="welcome-eyebrow">
           A letter from the heart

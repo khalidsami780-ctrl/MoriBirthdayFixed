@@ -16,7 +16,7 @@ function EidNavDots({ active, scrollTo }) {
       style={{
         position: 'fixed', right: '1.1rem', top: '50%',
         transform: 'translateY(-50%)', display: 'flex',
-        flexDirection: 'column', gap: 10, zIndex: 100,
+        flexDirection: 'column', gap: 10,
       }}
       aria-label="Eid section navigation"
     >
@@ -81,17 +81,14 @@ export default function EidPage() {
     >
       <div className="noise-overlay" aria-hidden="true" />
 
-      {/* World Switcher */}
-      <WorldSwitcher />
-
-      {/* Eid nav dots */}
-      <EidNavDots active={active} scrollTo={scrollTo} />
-
       <main ref={scrollRef} className="scroll-container" role="main">
         <EidGreeting     sectionRef={setRef(0)} />
         <EidMusicSection sectionRef={setRef(1)} />
         <EidMemories     sectionRef={setRef(2)} />
       </main>
+
+      {/* Eid nav dots — rendered after main to stay on top naturally */}
+      <EidNavDots active={active} scrollTo={scrollTo} />
     </motion.div>
   )
 }
