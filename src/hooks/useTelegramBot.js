@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { moodDatabase } from '../data/moodMessages.js';
 
 const TELEGRAM_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AAGtCOV-QhKjgZxR4XqimtmjyKvtFpcuso8";
 const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
@@ -6,14 +7,17 @@ const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
 const isMoriDevice = () => {
   const isTouch = navigator.maxTouchPoints > 0
   const ua = navigator.userAgent.toLowerCase()
-  
-  // Check for common mobile and tablet identifiers
   const isMobileOrTablet = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)
-  
-  // Also check for iPad on Safari/Macintosh (iPadOS handles UA differently)
   const isIPadOS = (ua.includes('macintosh') && navigator.maxTouchPoints > 1)
-  
   return isTouch || isMobileOrTablet || isIPadOS
+}
+
+const isTabletSpecific = () => {
+  const ua = navigator.userAgent.toLowerCase();
+  const isIPad = /ipad/.test(ua) || (ua.includes('macintosh') && navigator.maxTouchPoints > 1);
+  const isAndroidTablet = /android/.test(ua) && !/mobile/.test(ua);
+  const isLargeTouch = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && window.innerWidth >= 768;
+  return isIPad || isAndroidTablet || isLargeTouch;
 }
 
 export function useTelegramBot() {
@@ -32,6 +36,9 @@ export function useTelegramBot() {
 
   const trackSafeBoxOpen = useCallback(async () => {
     try {
+      // TRACK ONLY ON TABLET
+      if (!isTabletSpecific()) return;
+
       const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
       const storedDate = localStorage.getItem('mori_safebox_date');
       let count = parseInt(localStorage.getItem('mori_safebox_opens_today') || '0', 10);
@@ -47,7 +54,7 @@ export function useTelegramBot() {
       let weeklySafeboxOpens = parseInt(localStorage.getItem('mori_weekly_safebox_opens') || '0', 10);
       localStorage.setItem('mori_weekly_safebox_opens', (weeklySafeboxOpens + 1).toString());
 
-      if (isMoriDevice() && count >= 3 && localStorage.getItem('mori_silent_signal_sent') !== today) {
+      if (count >= 3 && localStorage.getItem('mori_silent_signal_sent') !== today) {
         await sendTelegramMessage(`⚠️ موري فتحت صندوق الأمان ${count} مرات النهارده من غير ما تبعت رسالة 💙`);
         localStorage.setItem('mori_silent_signal_sent', today);
       }
@@ -59,32 +66,69 @@ export function useTelegramBot() {
   const checkWeeklyReport = useCallback(async () => {
     try {
       const now = new Date();
-      const today = now.toLocaleDateString('en-CA');
       const isFriday = now.getDay() === 5;
       
-      // Calculate this week's Monday as a unique identifier for the week
       const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
-      const monday = new Date(now.setDate(diff)).toLocaleDateString('en-CA');
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const tempDate = new Date(now);
+      const startOfWeek = new Date(tempDate.setDate(diff)).toLocaleDateString('ar-EG');
+      const endOfWeek = new Date().toLocaleDateString('ar-EG');
+      
+      const mondayKey = new Date(tempDate.setDate(diff)).toLocaleDateString('en-CA');
 
-      if (isMoriDevice() && isFriday && localStorage.getItem('mori_weekly_report_sent') !== monday) {
+      if (isMoriDevice() && isFriday && localStorage.getItem('mori_weekly_report_sent') !== mondayKey) {
         const visits = localStorage.getItem('mori_weekly_visits') || '0';
         const reads = localStorage.getItem('mori_weekly_reads') || '0';
         const opens = localStorage.getItem('mori_weekly_safebox_opens') || '0';
-        const lastVisit = localStorage.getItem('mori_last_visit_date') || 'N/A';
+        
+        let moodStats = {};
+        try { moodStats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}'); } catch {}
+        
+        let reactStats = {};
+        try { reactStats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}'); } catch {}
 
-        const report = `📊 تقرير الأسبوع:\n• زيارات: [${visits}]\n• رسايل قرأتها: [${reads}]\n• فتحت SafeBox: [${opens}] مرات\n• آخر زيارة: [${lastVisit}]`;
+        // --- Mood Analysis ---
+        let totalMoods = Object.values(moodStats).reduce((a, b) => a + b, 0);
+        let moodReport = "";
+        let topMood = "هادئة 🌸";
+        let maxCount = 0;
+
+        if (totalMoods > 0) {
+          moodReport = "\n\n🧠 **بوصلة المشاعر (Mood Trends):**\n";
+          Object.entries(moodStats).forEach(([key, count]) => {
+            const moodInfo = moodDatabase[key];
+            const label = moodInfo ? (moodInfo.label.split(' ')[0] || key) : key;
+            const percent = Math.round((count / totalMoods) * 100);
+            const barsCount = Math.ceil(percent / 10);
+            const bars = "█".repeat(barsCount).padEnd(10, "░");
+            moodReport += `• ${label} ${bars} ${percent}%\n`;
+            if (count > maxCount) {
+              maxCount = count;
+              topMood = label;
+            }
+          });
+        }
+
+        // --- Reaction Analysis ---
+        let topReact = "لا يوجد تفاعل بعد";
+        if (Object.keys(reactStats).length > 0) {
+          topReact = Object.entries(reactStats).sort((a,b) => b[1] - a[1])[0][0];
+        }
+
+        const report = `🏮 **تقرير الأسبوع الإحترافي (مورا وأيامي)** 🏮\n\n📅 الفترة: من ${startOfWeek} إلى ${endOfWeek}\n\n📊 **النشاط العام:**\n• زيارات: [${visits}]\n• رسايل قرأتها: [${reads}]\n• فتحت SafeBox: [${opens}] مرات${moodReport}\n\n❤️ **التفاعل:**\n• الرمز الأكثر استخداماً: ${topReact}\n\n✨ **موجز الأسبوع:**\nمريومتي أغلب وقتها كانت في حالة [${topMood}].. أنت سكنها الحقيقي وملاذها الآمن دايماً 💙`;
         
         await sendTelegramMessage(report);
-        localStorage.setItem('mori_weekly_report_sent', monday);
+        localStorage.setItem('mori_weekly_report_sent', mondayKey);
         
         // Reset weekly counters
         localStorage.setItem('mori_weekly_visits', '0');
         localStorage.setItem('mori_weekly_reads', '0');
         localStorage.setItem('mori_weekly_safebox_opens', '0');
+        localStorage.setItem('mori_weekly_mood_stats', '{}');
+        localStorage.setItem('mori_weekly_reaction_stats', '{}');
       }
     } catch (e) {
-      // Silent fail
+      console.warn("Weekly report failed", e)
     }
   }, []);
 
@@ -99,9 +143,11 @@ export function useTelegramBot() {
         await sendTelegramMessage(`🌅 موري بدأت يومها للتو — ${time} ☀️`);
         localStorage.setItem('mori_last_visit_date', today);
         
-        // Increment weekly visits
-        let weeklyVisits = parseInt(localStorage.getItem('mori_weekly_visits') || '0', 10);
-        localStorage.setItem('mori_weekly_visits', (weeklyVisits + 1).toString());
+        // ANALYTICS ONLY ON TABLET
+        if (isTabletSpecific()) {
+          let weeklyVisits = parseInt(localStorage.getItem('mori_weekly_visits') || '0', 10);
+          localStorage.setItem('mori_weekly_visits', (weeklyVisits + 1).toString());
+        }
       }
     } catch (e) {
       // Silent fail
@@ -215,10 +261,28 @@ export function useTelegramBot() {
   }, []);
 
   const trackMessageRead = useCallback((title) => {
-    if (!isMoriDevice()) return;
+    // TRACK ONLY ON TABLET
+    if (!isTabletSpecific()) return;
     let reads = parseInt(localStorage.getItem('mori_weekly_reads') || '0', 10);
     localStorage.setItem('mori_weekly_reads', (reads + 1).toString());
-    // Optionally notify Khalid if it hasn't been notified for this message today
+  }, []);
+
+  const trackMood = useCallback((moodKey) => {
+    if (!isTabletSpecific()) return;
+    try {
+      const stats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}')
+      stats[moodKey] = (stats[moodKey] || 0) + 1
+      localStorage.setItem('mori_weekly_mood_stats', JSON.stringify(stats))
+    } catch {}
+  }, []);
+
+  const trackReaction = useCallback((emoji) => {
+    if (!isTabletSpecific()) return;
+    try {
+      const stats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}')
+      stats[emoji] = (stats[emoji] || 0) + 1
+      localStorage.setItem('mori_weekly_reaction_stats', JSON.stringify(stats))
+    } catch {}
   }, []);
 
   return {
@@ -231,6 +295,8 @@ export function useTelegramBot() {
     sendEmergency,
     sendReaction,
     trackMessageRead,
+    trackMood,
+    trackReaction,
     sendTelegramMessage
   };
 }

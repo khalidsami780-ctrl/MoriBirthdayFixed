@@ -81,7 +81,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsReadMore, setNeedsReadMore] = useState(false)
   const [hasNotifiedRead, setHasNotifiedRead] = useState(false)
-  const { sendReaction, trackMessageRead } = useTelegramBot()
+  const { sendReaction, trackMessageRead, trackReaction } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   const validMedia = post.media || []
@@ -100,6 +100,9 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
       const stored = JSON.parse(localStorage.getItem('mori_reactions') || '{}')
       stored[post.id] = emoji
       localStorage.setItem('mori_reactions', JSON.stringify(stored))
+
+      // Track weekly reaction stats for the professional report (Tablet-only)
+      trackReaction(emoji);
     } catch (e) { console.error(e) }
 
     sendReaction(post.title || "بدون عنوان", emoji)
@@ -359,7 +362,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.08 })
   const validMedia = post.media || []
-  const { sendReaction } = useTelegramBot()
+  const { sendReaction, trackReaction } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   // Load reaction from localStorage if it exists
@@ -376,6 +379,9 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       const stored = JSON.parse(localStorage.getItem('mori_reactions') || '{}')
       stored[post.id] = emoji
       localStorage.setItem('mori_reactions', JSON.stringify(stored))
+
+      // Track weekly reaction stats for the professional report (Tablet-only)
+      trackReaction(emoji);
     } catch (e) { console.error(e) }
 
     sendReaction(post.title || "بدون عنوان", emoji)

@@ -43,7 +43,7 @@ export default function SafeBox() {
   const [shouldPoll, setShouldPoll] = useState(false)
   const comfortTimeoutRef = useRef(null)
   
-  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage } = useTelegramBot()
+  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage, trackMood } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   useEffect(() => {
@@ -78,6 +78,10 @@ export default function SafeBox() {
     const messages = moodDatabase[moodKey].messages
     const randomIdx = Math.floor(Math.random() * messages.length)
     setActiveMessage(messages[randomIdx])
+
+    // Track weekly mood stats for the professional report (Tablet-only)
+    trackMood(moodKey);
+
     setStage('comfort_view')
   }
 
