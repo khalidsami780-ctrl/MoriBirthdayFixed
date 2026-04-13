@@ -182,6 +182,7 @@ export default function SafeBox() {
                            ❤️‍🔥
                          </motion.button>
                          <div style={S.emergencyText}>نداء عاجل</div>
+                         <div style={S.emergencyHint}>  زر النداء العاجل استخدميه بس لو فعلاً محتاجاني ضروري دلوقتي.. هيتبعتلي تنبيه فوري  💌</div>
                        </div>
 
                        <h2 style={S.title}>حاسة بإيه دلوقتي يا مريومتي؟</h2>
@@ -413,6 +414,15 @@ const S = {
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '1px'
+  },
+  emergencyHint: {
+    color: 'rgba(255, 77, 77, 0.5)',
+    fontFamily: "'Scheherazade New', serif",
+    fontSize: '0.85rem',
+    marginTop: '2px',
+    maxWidth: '200px',
+    lineHeight: '1.4',
+    textAlign: 'center'
   },
   title: {
     fontFamily: `'Scheherazade New', serif`,
