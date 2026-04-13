@@ -81,8 +81,16 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsReadMore, setNeedsReadMore] = useState(false)
   const [hasNotifiedRead, setHasNotifiedRead] = useState(false)
-  const { sendReaction, trackMessageRead, trackReaction } = useTelegramBot()
+  const { sendReaction, trackMessageRead, trackReaction, trackFavorite } = useTelegramBot()
   const { pushNotification } = useNotifications()
+
+  // Load interaction states from localStorage
+  const [isFavorite, setIsFavorite] = useState(() => {
+    try {
+      const favs = JSON.parse(localStorage.getItem('mori_favorites') || '[]')
+      return favs.includes(post.id)
+    } catch { return false }
+  })
 
   const validMedia = post.media || []
 
@@ -107,6 +115,21 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
 
     sendReaction(post.title || "بدون عنوان", emoji)
     pushNotification("تم إرسال الريأكت بنجاح 💙")
+  }
+
+  const toggleFavorite = () => {
+    const nextState = !isFavorite;
+    setIsFavorite(nextState);
+    try {
+      let favs = JSON.parse(localStorage.getItem('mori_favorites') || '[]')
+      if (nextState) {
+        if (!favs.includes(post.id)) favs.push(post.id);
+      } else {
+        favs = favs.filter(id => id !== post.id);
+      }
+      localStorage.setItem('mori_favorites', JSON.stringify(favs));
+      trackFavorite(post.title || "بدون عنوان", nextState);
+    } catch (e) { console.error(e) }
   }
 
   useEffect(() => {
@@ -239,21 +262,37 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
       )}
 
       <div style={MC.footerDivider} />
-      <div style={MC.reactionRow}>
-        {['❤️', '🌹', '🤲', '👎'].map(emoji => (
-          <motion.button
-            key={emoji}
-            whileHover={{ scale: 1.25 }}
-            whileTap={{ scale: 0.9 }}
-            style={{
-              ...MC.emojiBtn,
-              ...(activeEmoji === emoji ? MC.activeEmojiBtn : {})
-            }}
-            onClick={() => handleReact(emoji)}
-          >
-            {emoji}
-          </motion.button>
-        ))}
+      <div style={MC.interactionContainer}>
+        <div style={MC.reactionRow}>
+          {['❤️', '🌹', '🤲', '👎'].map(emoji => (
+            <motion.button
+              key={emoji}
+              whileHover={{ scale: 1.25 }}
+              whileTap={{ scale: 0.9 }}
+              style={{
+                ...MC.emojiBtn,
+                ...(activeEmoji === emoji ? MC.activeEmojiBtn : {})
+              }}
+              onClick={() => handleReact(emoji)}
+            >
+              {emoji}
+            </motion.button>
+          ))}
+        </div>
+
+        <motion.button
+          whileHover={{ scale: 1.05, background: 'rgba(201,168,76,0.08)', borderColor: 'rgba(201,168,76,0.4)' }}
+          whileTap={{ scale: 0.95 }}
+          onClick={toggleFavorite}
+          style={{
+            ...MC.favBtn,
+            color: isFavorite ? '#e8c97e' : 'rgba(168,200,248,0.5)',
+            borderColor: isFavorite ? 'rgba(201,168,76,0.5)' : 'rgba(168,200,248,0.2)',
+          }}
+        >
+          <span>{isFavorite ? '🌟' : '⭐'}</span>
+          <span>{isFavorite ? 'In Favorites' : 'Add to favorite'}</span>
+        </motion.button>
       </div>
       <p style={MC.note}>
         {`سيظل هذا المكان موجودًا…\nلمن أراد أن يعود يومًا ويقرأ بهدوء`}
@@ -337,6 +376,15 @@ const MC = {
     background: 'linear-gradient(90deg,transparent,rgba(91,156,246,0.3),transparent)',
     margin: '2rem auto 1.25rem',
   },
+  interactionContainer: {
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px'
+  },
+  favBtn: {
+    display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '16px',
+    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(168,200,248,0.2)',
+    color: 'rgba(168,200,248,0.6)', fontFamily: "'Scheherazade New', serif", fontSize: '0.92rem',
+    cursor: 'pointer', transition: 'all 0.3s ease'
+  },
   note: {
     fontFamily: `'Scheherazade New','Arial',serif`,
     direction: 'rtl', textAlign: 'center',
@@ -362,8 +410,15 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.08 })
   const validMedia = post.media || []
-  const { sendReaction, trackReaction } = useTelegramBot()
+  const { sendReaction, trackReaction, trackFavorite } = useTelegramBot()
   const { pushNotification } = useNotifications()
+
+  const [isFavorite, setIsFavorite] = useState(() => {
+    try {
+      const favs = JSON.parse(localStorage.getItem('mori_favorites') || '[]')
+      return favs.includes(post.id)
+    } catch { return false }
+  })
 
   // Load reaction from localStorage if it exists
   const [activeEmoji, setActiveEmoji] = useState(() => {
@@ -386,6 +441,21 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
 
     sendReaction(post.title || "بدون عنوان", emoji)
     pushNotification("تم إرسال الريأكت بنجاح 💙")
+  }
+
+  const toggleFavorite = () => {
+    const nextState = !isFavorite;
+    setIsFavorite(nextState);
+    try {
+      let favs = JSON.parse(localStorage.getItem('mori_favorites') || '[]')
+      if (nextState) {
+        if (!favs.includes(post.id)) favs.push(post.id);
+      } else {
+        favs = favs.filter(id => id !== post.id);
+      }
+      localStorage.setItem('mori_favorites', JSON.stringify(favs));
+      trackFavorite(post.title || "بدون عنوان", nextState);
+    } catch (e) { console.error(e) }
   }
 
   return (
@@ -429,21 +499,37 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       )}
 
       <div style={MC.footerDivider} />
-      <div style={MC.reactionRow}>
-        {['❤️', '🌹', '🤲', '👎'].map(emoji => (
-          <motion.button
-            key={emoji}
-            whileHover={{ scale: 1.25 }}
-            whileTap={{ scale: 0.9 }}
-            style={{
-              ...MC.emojiBtn,
-              ...(activeEmoji === emoji ? MC.activeEmojiBtn : {})
-            }}
-            onClick={() => handleReact(emoji)}
-          >
-            {emoji}
-          </motion.button>
-        ))}
+      <div style={MC.interactionContainer}>
+        <div style={MC.reactionRow}>
+          {['❤️', '🌹', '🤲', '👎'].map(emoji => (
+            <motion.button
+              key={emoji}
+              whileHover={{ scale: 1.25 }}
+              whileTap={{ scale: 0.9 }}
+              style={{
+                ...MC.emojiBtn,
+                ...(activeEmoji === emoji ? MC.activeEmojiBtn : {})
+              }}
+              onClick={() => handleReact(emoji)}
+            >
+              {emoji}
+            </motion.button>
+          ))}
+        </div>
+
+        <motion.button
+          whileHover={{ scale: 1.05, background: 'rgba(201,168,76,0.08)', borderColor: 'rgba(201,168,76,0.4)' }}
+          whileTap={{ scale: 0.95 }}
+          onClick={toggleFavorite}
+          style={{
+            ...MC.favBtn,
+            color: isFavorite ? '#e8c97e' : 'rgba(168,200,248,0.5)',
+            borderColor: isFavorite ? 'rgba(201,168,76,0.5)' : 'rgba(168,200,248,0.2)',
+          }}
+        >
+          <span>{isFavorite ? '🌟' : '⭐'}</span>
+          <span>{isFavorite ? 'In Favorites' : 'Add to favorite'}</span>
+        </motion.button>
       </div>
     </motion.article>
   )
@@ -939,6 +1025,12 @@ export default function MessagesPage() {
   const [dateFilter, setDateFilter] = useState({ year: 'all', month: 'all' })
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
   const handleTab = useCallback(t => setActiveTab(t), [])
+
+  const { trackSectionEntrance } = useTelegramBot()
+
+  useEffect(() => {
+    trackSectionEntrance("الرسائل والخواطر 📖")
+  }, [trackSectionEntrance])
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640)

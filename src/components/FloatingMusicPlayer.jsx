@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { playlist } from '../data/playlist'
 import { createPortal } from 'react-dom'
+import { useTelegramBot } from '../hooks/useTelegramBot'
 
 export default function FloatingMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -23,6 +24,8 @@ export default function FloatingMusicPlayer() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+  
+  const { trackSongPlay } = useTelegramBot()
   const currentTrack = playlist[currentTrackIndex]
 
   // Handle Romantic Notice
@@ -52,8 +55,10 @@ export default function FloatingMusicPlayer() {
     
     if (isPlaying) {
       audioRef.current.play().catch(() => setIsPlaying(false))
+      // Notify Khalid (with 5-min throttle handled in the hook)
+      trackSongPlay(currentTrack.title, currentTrack.artist)
     }
-  }, [isPlaying, currentTrackIndex])
+  }, [isPlaying, currentTrackIndex, trackSongPlay, currentTrack.title, currentTrack.artist])
 
   const togglePlay = (e) => {
     if (e) e.stopPropagation()

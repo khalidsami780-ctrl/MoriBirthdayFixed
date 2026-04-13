@@ -13,6 +13,7 @@ const FloatingMusicPlayer = lazy(() => import('./components/FloatingMusicPlayer.
 const UpdateNotification = lazy(() => import('./components/UpdateNotification.jsx'))
 const NotificationBell = lazy(() => import('./components/NotificationBell.jsx'))
 const Navbar = lazy(() => import('./components/Navbar.jsx'))
+const LiveNote = lazy(() => import('./components/LiveNote.jsx'))
 
 import { useTelegramBot } from './hooks/useTelegramBot.js'
 /* ── Full-screen loading fallback ─────────────────────────── */
@@ -41,13 +42,25 @@ function PageLoader() {
 export default function App() {
   const location = useLocation()
   const [showEnhancements, setShowEnhancements] = useState(false)
-  const { checkFirstVisitToday, checkWeeklyReport } = useTelegramBot()
+  const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement } = useTelegramBot()
 
   useEffect(() => {
     // Initial tracking on app mount
     checkFirstVisitToday()
     checkWeeklyReport()
   }, [checkFirstVisitToday, checkWeeklyReport])
+
+  // Global Engagement Timer (tracks if she spends a long time in the site today)
+  useEffect(() => {
+    const milestones = [15, 30, 45, 60]; // minutes
+    const timers = milestones.map(mins => {
+      return setTimeout(() => {
+        trackDeepEngagement(mins);
+      }, mins * 60 * 1000);
+    });
+
+    return () => timers.forEach(clearTimeout);
+  }, [trackDeepEngagement]);
 
   useEffect(() => {
     let cancelled = false
@@ -97,6 +110,7 @@ export default function App() {
           <UpdateNotification />
           <NotificationBell />
           <GlobalToast />
+          <LiveNote />
         </Suspense>
       )}
     </Suspense>

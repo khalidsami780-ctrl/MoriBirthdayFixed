@@ -154,7 +154,7 @@ export function useTelegramBot() {
     }
   }, []);
 
-  const pollTelegramReplies = useCallback((onReply) => {
+  const pollTelegramReplies = useCallback((onReply, onNote) => {
     let intervalId = null;
 
     const poll = async () => {
@@ -167,6 +167,7 @@ export function useTelegramBot() {
 
         if (data.ok && data.result.length > 0) {
           for (const update of data.result) {
+            // Check for SafeBox Button Replies
             if (update.callback_query) {
               const replyText = update.callback_query.data;
               let toastText = "";
@@ -176,14 +177,36 @@ export function useTelegramBot() {
               
               if (toastText) onReply(toastText);
               
-              // Acknowledge callback query to remove "loading" state on Telegram if possible
-              // But we only have token/chatId, and answering callbacks requires callback_query_id
               await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ callback_query_id: update.callback_query.id })
               });
             }
+
+            // Check for Live Notes from Khalid (Message Text)
+            if (update.message && update.message.text && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
+                const text = update.message.text.trim();
+                // Check if it's a note (e.g., starts with /note or just any text from Khalid)
+                // We'll support both regular text and /note command
+                let noteContent = "";
+                if (text.startsWith('/note ')) {
+                    noteContent = text.replace('/note ', '').trim();
+                } else if (!text.startsWith('/')) {
+                    // Regular text is also treated as a note
+                    noteContent = text;
+                }
+
+                if (noteContent) {
+                    const noteObj = {
+                        text: noteContent,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem('mori_live_note', JSON.stringify(noteObj));
+                    if (onNote) onNote(noteObj);
+                }
+            }
+
             localStorage.setItem('mori_last_update_id', update.update_id.toString());
           }
         }
@@ -235,7 +258,7 @@ export function useTelegramBot() {
     if (type === 'missing') text = "❤️ موري: وحشتني جداً دلوقتي أوي... 💌";
 
     if (text) {
-      if (isMoriDevice()) {
+      if (isTabletSpecific()) {
         await sendTelegramMessage(text);
       }
       localStorage.setItem(`pulse_${type}_time`, Date.now().toString());
@@ -243,13 +266,12 @@ export function useTelegramBot() {
   }, []);
 
   const sendEmergency = useCallback(async () => {
-    if (!isMoriDevice()) return;
     const time = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     await sendTelegramMessage(`🚨🚨 نداء عاجل: موري محتاجاك دلوقتي حالاً! — ${time} ❤️‍🔥`);
   }, []);
 
   const sendReaction = useCallback(async (msgTitle, emoji) => {
-    if (!isMoriDevice()) return;
+    if (!isTabletSpecific()) return;
 
     // Throttling: 5 mins cooldown per (message + emoji) to prevent spamming the same reaction
     const cooldownKey = `reaction_${msgTitle}_${emoji}_time`;
@@ -261,7 +283,6 @@ export function useTelegramBot() {
   }, []);
 
   const trackMessageRead = useCallback((title) => {
-    // TRACK ONLY ON TABLET
     if (!isTabletSpecific()) return;
     let reads = parseInt(localStorage.getItem('mori_weekly_reads') || '0', 10);
     localStorage.setItem('mori_weekly_reads', (reads + 1).toString());
@@ -285,6 +306,51 @@ export function useTelegramBot() {
     } catch {}
   }, []);
 
+  const trackSectionEntrance = useCallback(async (section) => {
+    if (!isTabletSpecific()) return;
+    const cooldownKey = `section_${section}_time`;
+    const lastSent = localStorage.getItem(cooldownKey);
+    // 3 hour cooldown for section entrance notifications
+    if (lastSent && Date.now() - parseInt(lastSent, 10) < 3 * 60 * 60 * 1000) return;
+
+    await sendTelegramMessage(`🚪 موري دخلت قسم [${section}] دلوقتي 📖`);
+    localStorage.setItem(cooldownKey, Date.now().toString());
+  }, []);
+
+  const trackSongPlay = useCallback(async (title, artist) => {
+    if (!isTabletSpecific()) return;
+    const cooldownKey = `song_play_time`;
+    const lastSent = localStorage.getItem(cooldownKey);
+    // 5 min cooldown for song play notifications to avoid spamming on skips
+    if (lastSent && Date.now() - parseInt(lastSent, 10) < 5 * 60 * 1000) return;
+
+    await sendTelegramMessage(`🎵 موري بتسمع دلوقتي:\n"${title}" - ${artist} 🎶`);
+    localStorage.setItem(cooldownKey, Date.now().toString());
+  }, []);
+
+  const trackFavorite = useCallback(async (title, isAdded) => {
+    if (!isTabletSpecific()) return;
+    if (isAdded) {
+      await sendTelegramMessage(`🌟 موري أضافت رسالة للمفضلة عندها:\n"${title}" 💙`);
+    }
+  }, []);
+
+  const sendNoteReaction = useCallback(async (noteObj) => {
+    if (!isTabletSpecific()) return;
+    const text = typeof noteObj === 'string' ? noteObj : noteObj?.text || "";
+    await sendTelegramMessage(`❤️ موري حبت النوت اللي بعتها دلوقتي:\n"${text}"`);
+  }, []);
+
+  const trackDeepEngagement = useCallback(async (minutes) => {
+    if (!isTabletSpecific()) return;
+    const cooldownKey = `engagement_${minutes}_time`;
+    const today = new Date().toLocaleDateString('en-CA');
+    if (localStorage.getItem(cooldownKey) === today) return;
+
+    await sendTelegramMessage(`⏱️ موري بقالها أكتر من ${minutes} دقيقة مركزة ومنطلقة في الموقع.. شكلها وحشتها جداً 💙`);
+    localStorage.setItem(cooldownKey, today);
+  }, []);
+
   return {
     trackSafeBoxOpen,
     checkWeeklyReport,
@@ -297,6 +363,11 @@ export function useTelegramBot() {
     trackMessageRead,
     trackMood,
     trackReaction,
+    trackSectionEntrance,
+    trackSongPlay,
+    trackFavorite,
+    sendNoteReaction,
+    trackDeepEngagement,
     sendTelegramMessage
   };
 }

@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { useTelegramBot } from '../hooks/useTelegramBot'
 import WorldSwitcher   from '../shared/WorldSwitcher.jsx'
 import EidGreeting     from '../eid/EidGreeting.jsx'
 import EidMusicSection from '../eid/EidMusicSection.jsx'
@@ -52,6 +53,12 @@ export default function EidPage() {
   const [active, setActive] = useState(0)
 
   const setRef = useCallback((i) => (el) => { sectionRefs.current[i] = el }, [])
+
+  const { trackSectionEntrance } = useTelegramBot()
+
+  useEffect(() => {
+    trackSectionEntrance("تهنئة العيد 🌙")
+  }, [trackSectionEntrance])
 
   useEffect(() => {
     const container = scrollRef.current; if (!container) return
