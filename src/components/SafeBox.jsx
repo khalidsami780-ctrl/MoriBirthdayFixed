@@ -43,7 +43,7 @@ export default function SafeBox() {
   const [shouldPoll, setShouldPoll] = useState(false)
   const comfortTimeoutRef = useRef(null)
   
-  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency } = useTelegramBot()
+  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   useEffect(() => {
@@ -60,6 +60,12 @@ export default function SafeBox() {
   }, [shouldPoll, pollTelegramReplies, pushNotification])
 
   const handleComfortedClick = () => {
+    // Notify Khalid that she felt reassured
+    if (selectedMood && activeMessage) {
+      const moodLabel = moodDatabase[selectedMood]?.label || selectedMood;
+      sendTelegramMessage(`📩 موري قرأت رسالة طمأنينة!\n• الحالة: [${moodLabel}]\n• الرسالة:\n"${activeMessage}" 💙`);
+    }
+
     setStage('smile')
     if (comfortTimeoutRef.current) clearTimeout(comfortTimeoutRef.current)
     comfortTimeoutRef.current = setTimeout(() => {
