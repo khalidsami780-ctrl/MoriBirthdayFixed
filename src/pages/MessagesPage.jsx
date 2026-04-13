@@ -8,6 +8,7 @@ import { messages as messagePosts } from '../data/messages.js'
 import { tips as advicePosts } from '../data/tips.js'
 import { milestones } from '../data/timeCapsule.js'
 import { PINNED_MESSAGE_IDS } from '../data/pinnedConfig.js'
+import { useTelegramBot } from '../hooks/useTelegramBot.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
@@ -78,6 +79,8 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
   const inView = useInView(ref, { once: true, amount: 0.06 })
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsReadMore, setNeedsReadMore] = useState(false)
+  const [hasNotifiedRead, setHasNotifiedRead] = useState(false)
+  const { sendReaction, trackMessageRead } = useTelegramBot()
 
   const validMedia = post.media || []
 
@@ -162,7 +165,13 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
         
         {needsReadMore && (
           <button 
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+              setIsExpanded(!isExpanded);
+              if (!isExpanded && !hasNotifiedRead) {
+                trackMessageRead(post.title);
+                setHasNotifiedRead(true);
+              }
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -205,6 +214,21 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
       )}
 
       <div style={MC.footerDivider} />
+      <div style={MC.reactionRow}>
+        {['❤️', '🌹', '🤲', '👎'].map(emoji => (
+          <motion.button
+            key={emoji}
+            whileHover={{ scale: 1.25 }}
+            whileTap={{ scale: 0.9 }}
+            style={MC.emojiBtn}
+            onClick={() => {
+              sendReaction(post.title || "بدون عنوان", emoji);
+            }}
+          >
+            {emoji}
+          </motion.button>
+        ))}
+      </div>
       <p style={MC.note}>
         {`سيظل هذا المكان موجودًا…\nلمن أراد أن يعود يومًا ويقرأ بهدوء`}
       </p>
@@ -260,6 +284,22 @@ const MC = {
     color: 'rgba(230,242,255,0.82)',
     whiteSpace: 'pre-line', margin: 0,
   },
+  reactionRow: {
+    display: 'flex',
+    gap: 'clamp(1rem,4vw,1.5rem)',
+    justifyContent: 'center',
+    marginBottom: '1rem',
+    padding: '0.2rem 0'
+  },
+  emojiBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: 'clamp(1.4rem,4.5vw,1.8rem)',
+    cursor: 'pointer',
+    padding: '0.5rem',
+    transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))'
+  },
   footerDivider: {
     width: 80, height: 1,
     background: 'linear-gradient(90deg,transparent,rgba(91,156,246,0.3),transparent)',
@@ -290,6 +330,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.08 })
   const validMedia = post.media || []
+  const { sendReaction } = useTelegramBot()
 
   return (
     <motion.article
@@ -330,6 +371,23 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
           </svg>
         </a>
       )}
+
+      <div style={MC.footerDivider} />
+      <div style={MC.reactionRow}>
+        {['❤️', '🌹', '🤲', '👎'].map(emoji => (
+          <motion.button
+            key={emoji}
+            whileHover={{ scale: 1.25 }}
+            whileTap={{ scale: 0.9 }}
+            style={MC.emojiBtn}
+            onClick={() => {
+              sendReaction(post.title || "بدون عنوان", emoji);
+            }}
+          >
+            {emoji}
+          </motion.button>
+        ))}
+      </div>
     </motion.article>
   )
 })

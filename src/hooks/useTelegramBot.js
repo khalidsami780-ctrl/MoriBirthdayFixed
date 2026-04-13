@@ -4,15 +4,16 @@ const TELEGRAM_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AA
 const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
 
 const isMoriDevice = () => {
-  const w = window.innerWidth
   const isTouch = navigator.maxTouchPoints > 0
-  const isTabletSize = w >= 600 && w <= 1400
-  const isNotPhone = Math.max(window.innerWidth, window.innerHeight) >= 700
   const ua = navigator.userAgent.toLowerCase()
-  const isTabletUA = ua.includes('ipad') || 
-    (ua.includes('macintosh') && navigator.maxTouchPoints > 1) ||
-    (ua.includes('android') && !ua.includes('mobile'))
-  return isTouch && isTabletSize && isNotPhone && (isTabletUA || w >= 768)
+  
+  // Check for common mobile and tablet identifiers
+  const isMobileOrTablet = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)
+  
+  // Also check for iPad on Safari/Macintosh (iPadOS handles UA differently)
+  const isIPadOS = (ua.includes('macintosh') && navigator.maxTouchPoints > 1)
+  
+  return isTouch || isMobileOrTablet || isIPadOS
 }
 
 export function useTelegramBot() {
@@ -176,12 +177,60 @@ export function useTelegramBot() {
     return prefix ? prefix + text : text;
   };
 
+  const sendPulse = useCallback(async (type) => {
+    // Throttling: 1 hour individual cooldown for each pulse type
+    const lastPulse = localStorage.getItem(`pulse_${type}_time`);
+    if (lastPulse && Date.now() - parseInt(lastPulse, 10) < 60 * 60 * 1000) return;
+
+    let text = "";
+    if (type === 'thought') text = "💭 موري: بفكر فيك دلوقتي... 💙";
+    if (type === 'pray') text = "🤲 موري: لسه داعيالك في سجدتي... ✨";
+    if (type === 'safe') text = "🛡️ موري: أنا بخير ومطمنة معاك... 🌸";
+    if (type === 'missing') text = "❤️ موري: وحشتني جداً دلوقتي أوي... 💌";
+
+    if (text) {
+      if (isMoriDevice()) {
+        await sendTelegramMessage(text);
+      }
+      localStorage.setItem(`pulse_${type}_time`, Date.now().toString());
+    }
+  }, []);
+
+  const sendEmergency = useCallback(async () => {
+    if (!isMoriDevice()) return;
+    const time = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    await sendTelegramMessage(`🚨🚨 نداء عاجل: موري محتاجاك دلوقتي حالاً! — ${time} ❤️‍🔥`);
+  }, []);
+
+  const sendReaction = useCallback(async (msgTitle, emoji) => {
+    if (!isMoriDevice()) return;
+
+    // Throttling: 5 mins cooldown per (message + emoji) to prevent spamming the same reaction
+    const cooldownKey = `reaction_${msgTitle}_${emoji}_time`;
+    const lastSent = localStorage.getItem(cooldownKey);
+    if (lastSent && Date.now() - parseInt(lastSent, 10) < 5 * 60 * 1000) return;
+
+    await sendTelegramMessage(`مورو عملت ريأكت على رسالة: "${msgTitle}" ${emoji} 💙`);
+    localStorage.setItem(cooldownKey, Date.now().toString());
+  }, []);
+
+  const trackMessageRead = useCallback((title) => {
+    if (!isMoriDevice()) return;
+    let reads = parseInt(localStorage.getItem('mori_weekly_reads') || '0', 10);
+    localStorage.setItem('mori_weekly_reads', (reads + 1).toString());
+    // Optionally notify Khalid if it hasn't been notified for this message today
+  }, []);
+
   return {
     trackSafeBoxOpen,
     checkWeeklyReport,
     checkFirstVisitToday,
     pollTelegramReplies,
     buildMessageWithMood,
+    sendPulse,
+    sendEmergency,
+    sendReaction,
+    trackMessageRead,
     sendTelegramMessage
   };
 }

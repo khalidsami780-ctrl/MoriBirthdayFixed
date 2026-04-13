@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { moodDatabase } from '../data/moodMessages.js'
 import { useTelegramBot } from '../hooks/useTelegramBot.js'
 import { useNotifications } from '../hooks/useNotifications.js'
+import SoulSignals from './SoulSignals.jsx'
 import { createPortal } from 'react-dom'
 
 const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000
@@ -42,7 +43,7 @@ export default function SafeBox() {
   const [shouldPoll, setShouldPoll] = useState(false)
   const comfortTimeoutRef = useRef(null)
   
-  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies } = useTelegramBot()
+  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   useEffect(() => {
@@ -136,6 +137,7 @@ export default function SafeBox() {
          >
             <motion.div 
               style={S.modalContent}
+              className="safebox-scroll"
               onClick={e => e.stopPropagation()}
               initial={{ scale: 0.9, y: 20, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -156,7 +158,6 @@ export default function SafeBox() {
 
                 <AnimatePresence mode="wait">
                   
-                  {/* STAGE 1: Mood Selection */}
                   {stage === 'mood_selection' && (
                     <motion.div
                       key="moods"
@@ -165,6 +166,24 @@ export default function SafeBox() {
                       exit={{ opacity: 0, y: -10 }}
                       style={S.inner}
                     >
+                       <div style={S.emergencyRow}>
+                         <motion.button
+                           style={S.emergencyHeart}
+                           animate={{ scale: [1, 1.15, 1], boxShadow: ['0 0 10px rgba(255,0,0,0.2)', '0 0 25px rgba(255,0,0,0.5)', '0 0 10px rgba(255,0,0,0.2)'] }}
+                           transition={{ repeat: Infinity, duration: 1.5 }}
+                           whileTap={{ scale: 0.9 }}
+                           onClick={() => {
+                             if(window.confirm('هل تريدين إرسال نداء عاجل لدودو دلوقتي؟ ❤️‍🔥 .. هيوصله فوراً إن مريومتي محتاجاه ضروري جداً')) {
+                               sendEmergency()
+                               alert('تم إرسال النداء لقلبه.. هو معاكي دايماً 💙')
+                             }
+                           }}
+                         >
+                           ❤️‍🔥
+                         </motion.button>
+                         <div style={S.emergencyText}>نداء عاجل</div>
+                       </div>
+
                        <h2 style={S.title}>حاسة بإيه دلوقتي يا مريومتي؟</h2>
                        <div style={S.moodGrid}>
                          {Object.keys(moodDatabase).map(key => (
@@ -189,6 +208,8 @@ export default function SafeBox() {
                             عايزة أفضفضلك بجد 📝
                          </motion.button>
                        </div>
+
+                       <SoulSignals onSendPulse={sendPulse} />
                     </motion.div>
                   )}
 
@@ -330,13 +351,16 @@ const S = {
     background: 'rgba(8, 20, 45, 0.7)',
     border: '1px solid rgba(168, 200, 248, 0.25)',
     borderRadius: '32px',
-    width: '100%',
-    maxWidth: '480px',
-    padding: '40px 30px',
+    width: 'min(92%, 480px)',
+    maxHeight: 'min(90%, 850px)',
+    overflowY: 'auto',
+    padding: 'clamp(25px, 6vh, 40px) clamp(20px, 5vw, 30px)',
     position: 'relative',
     boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
     textAlign: 'center',
-    direction: 'rtl'
+    direction: 'rtl',
+    scrollbarWidth: 'thin',
+    scrollbarColor: 'rgba(168, 200, 248, 0.3) transparent'
   },
   absClose: {
     position: 'absolute',
@@ -360,6 +384,35 @@ const S = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center'
+  },
+  emergencyRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '20px'
+  },
+  emergencyHeart: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    background: 'rgba(255, 0, 0, 0.1)',
+    border: '1px solid rgba(255, 0, 0, 0.4)',
+    fontSize: '2rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: '#ff4d4d',
+    textShadow: '0 0 10px rgba(255, 0, 0, 0.5)'
+  },
+  emergencyText: {
+    fontFamily: `'Scheherazade New', serif`,
+    fontSize: '0.9rem',
+    color: 'rgba(255, 77, 77, 0.8)',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: '1px'
   },
   title: {
     fontFamily: `'Scheherazade New', serif`,

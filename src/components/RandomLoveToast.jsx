@@ -16,7 +16,7 @@ export default function RandomLoveToast() {
     // 2. Start the interval loop (Randomized between 1 to 3 minutes)
     let loopTimeoutId;
     const loop = () => {
-       const nextInterval = Math.floor(Math.random() * (180000 - 60000 + 1)) + 60000;
+       const nextInterval = 3 * 60 * 1000; // Exactly 3 minutes
        
        loopTimeoutId = setTimeout(() => {
           showRandomMessage();
