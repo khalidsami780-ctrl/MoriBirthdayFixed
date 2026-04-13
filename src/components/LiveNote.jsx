@@ -14,15 +14,20 @@ export default function LiveNote() {
   const { pollTelegramReplies, sendNoteReaction } = useTelegramBot()
 
   useEffect(() => {
-    // Initial load from storage to see if there's a recent note
     const stored = localStorage.getItem('mori_live_note')
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
-        setNote(parsed)
-        setShow(true)
+        const dismissed = localStorage.getItem('mori_live_note_dismissed')
+        
+        // Only show if it wasn't dismissed
+        if (dismissed !== String(parsed.timestamp)) {
+          setNote(parsed)
+          setShow(true)
+        } else {
+          setNote(parsed) // Load it but don't show it
+        }
       } catch (e) {
-        // Fallback for old simple string storage
         setNote({ text: stored, timestamp: Date.now() })
         setShow(true)
       }
@@ -57,6 +62,13 @@ export default function LiveNote() {
     }
   }
 
+  const handleDismiss = () => {
+    setShow(false)
+    if (note && note.timestamp) {
+      localStorage.setItem('mori_live_note_dismissed', String(note.timestamp))
+    }
+  }
+
   return createPortal(
     <AnimatePresence>
       {show && note && (
@@ -76,7 +88,7 @@ export default function LiveNote() {
                 <span style={S.title}>رسالة لكِ من قلب خالد 💌</span>
               </div>
               <button 
-                onClick={() => setShow(false)} 
+                onClick={handleDismiss} 
                 style={S.close}
                 title="إخفاء"
               >
