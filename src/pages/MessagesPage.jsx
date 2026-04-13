@@ -9,6 +9,7 @@ import { tips as advicePosts } from '../data/tips.js'
 import { milestones } from '../data/timeCapsule.js'
 import { PINNED_MESSAGE_IDS } from '../data/pinnedConfig.js'
 import { useTelegramBot } from '../hooks/useTelegramBot.js'
+import { useNotifications } from '../hooks/useNotifications.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
@@ -81,8 +82,29 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
   const [needsReadMore, setNeedsReadMore] = useState(false)
   const [hasNotifiedRead, setHasNotifiedRead] = useState(false)
   const { sendReaction, trackMessageRead } = useTelegramBot()
+  const { pushNotification } = useNotifications()
 
   const validMedia = post.media || []
+
+  // Load reaction from localStorage if it exists
+  const [activeEmoji, setActiveEmoji] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('mori_reactions') || '{}')
+      return stored[post.id] || null
+    } catch { return null }
+  })
+
+  const handleReact = (emoji) => {
+    setActiveEmoji(emoji)
+    try {
+      const stored = JSON.parse(localStorage.getItem('mori_reactions') || '{}')
+      stored[post.id] = emoji
+      localStorage.setItem('mori_reactions', JSON.stringify(stored))
+    } catch (e) { console.error(e) }
+
+    sendReaction(post.title || "بدون عنوان", emoji)
+    pushNotification("تم إرسال الريأكت بنجاح 💙")
+  }
 
   useEffect(() => {
     if (!textRef.current) return;
@@ -220,10 +242,11 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
             key={emoji}
             whileHover={{ scale: 1.25 }}
             whileTap={{ scale: 0.9 }}
-            style={MC.emojiBtn}
-            onClick={() => {
-              sendReaction(post.title || "بدون عنوان", emoji);
+            style={{
+              ...MC.emojiBtn,
+              ...(activeEmoji === emoji ? MC.activeEmojiBtn : {})
             }}
+            onClick={() => handleReact(emoji)}
           >
             {emoji}
           </motion.button>
@@ -297,8 +320,14 @@ const MC = {
     fontSize: 'clamp(1.4rem,4.5vw,1.8rem)',
     cursor: 'pointer',
     padding: '0.5rem',
-    transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-    filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))'
+    transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s',
+    filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))',
+    borderRadius: '12px',
+  },
+  activeEmojiBtn: {
+    background: 'rgba(91,156,246,0.18)',
+    boxShadow: '0 0 15px rgba(91,156,246,0.25)',
+    transform: 'scale(1.15)',
   },
   footerDivider: {
     width: 80, height: 1,
@@ -331,6 +360,27 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const inView = useInView(ref, { once: true, amount: 0.08 })
   const validMedia = post.media || []
   const { sendReaction } = useTelegramBot()
+  const { pushNotification } = useNotifications()
+
+  // Load reaction from localStorage if it exists
+  const [activeEmoji, setActiveEmoji] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('mori_reactions') || '{}')
+      return stored[post.id] || null
+    } catch { return null }
+  })
+
+  const handleReact = (emoji) => {
+    setActiveEmoji(emoji)
+    try {
+      const stored = JSON.parse(localStorage.getItem('mori_reactions') || '{}')
+      stored[post.id] = emoji
+      localStorage.setItem('mori_reactions', JSON.stringify(stored))
+    } catch (e) { console.error(e) }
+
+    sendReaction(post.title || "بدون عنوان", emoji)
+    pushNotification("تم إرسال الريأكت بنجاح 💙")
+  }
 
   return (
     <motion.article
@@ -379,10 +429,11 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
             key={emoji}
             whileHover={{ scale: 1.25 }}
             whileTap={{ scale: 0.9 }}
-            style={MC.emojiBtn}
-            onClick={() => {
-              sendReaction(post.title || "بدون عنوان", emoji);
+            style={{
+              ...MC.emojiBtn,
+              ...(activeEmoji === emoji ? MC.activeEmojiBtn : {})
             }}
+            onClick={() => handleReact(emoji)}
           >
             {emoji}
           </motion.button>

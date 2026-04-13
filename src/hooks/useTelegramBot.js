@@ -210,7 +210,7 @@ export function useTelegramBot() {
     const lastSent = localStorage.getItem(cooldownKey);
     if (lastSent && Date.now() - parseInt(lastSent, 10) < 5 * 60 * 1000) return;
 
-    await sendTelegramMessage(`مورو عملت ريأكت على رسالة: "${msgTitle}" ${emoji} 💙`);
+    await sendTelegramMessage(`[${emoji}] مورو عملت ريأكت على: "${msgTitle}"`);
     localStorage.setItem(cooldownKey, Date.now().toString());
   }, []);
 
