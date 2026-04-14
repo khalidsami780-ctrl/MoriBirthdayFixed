@@ -37,11 +37,15 @@ export default function LiveNote() {
 
         if (currentNote) {
           const dismissed = localStorage.getItem('mori_live_note_dismissed');
+          const reacted = localStorage.getItem(`mori_live_note_reacted_${currentNote.timestamp}`);
+          
           if (dismissed !== String(currentNote.timestamp)) {
             setNote(currentNote);
             setShow(true);
+            setHasReacted(reacted === 'true');
           } else {
             setNote(currentNote);
+            setHasReacted(reacted === 'true');
           }
         }
       } catch (e) {
@@ -59,7 +63,11 @@ export default function LiveNote() {
           const newNote = payload.new.data;
           setNote(newNote);
           setShow(true);
-          setHasReacted(false);
+          
+          // New note arrived -> check if THIS device reacted to it (usually false for fresh note)
+          const reacted = localStorage.getItem(`mori_live_note_reacted_${newNote.timestamp}`);
+          setHasReacted(reacted === 'true');
+
           // Persist locally too
           localStorage.setItem('mori_live_note', JSON.stringify(newNote));
         }
@@ -74,7 +82,8 @@ export default function LiveNote() {
         // but keeping this hook ensures the active polling device updates instantly.
         setNote(newNote);
         setShow(true);
-        setHasReacted(false);
+        const reacted = localStorage.getItem(`mori_live_note_reacted_${newNote.timestamp}`);
+        setHasReacted(reacted === 'true');
       }
     );
 
@@ -88,6 +97,8 @@ export default function LiveNote() {
     if (hasReacted || !note) return
     sendNoteReaction(note)
     setHasReacted(true)
+    // Persist reaction locally to this device
+    localStorage.setItem(`mori_live_note_reacted_${note.timestamp}`, 'true');
   }
 
   const formatTime = (ts) => {

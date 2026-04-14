@@ -17,10 +17,7 @@ export default function ReasonsJar() {
   useEffect(() => {
     const loadJar = async () => {
       try {
-        // 1. Load from LocalStorage (for offline/speed)
-        let localJar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
-        
-        // 2. Fetch from Supabase
+        // 1. Fetch Shared Content from Supabase
         const { data: cloudJar, error } = await supabase
           .from('reasons_jar')
           .select('*')
@@ -28,31 +25,21 @@ export default function ReasonsJar() {
 
         if (error) throw error;
 
-        // 3. Merge and deduplicate
-        const mergedMap = new Map();
-        // Local first
-        localJar.forEach(item => mergedMap.set(item.id, item));
-        // Cloud overwrites local (since cloud is the shared truth)
-        if (cloudJar) {
-          cloudJar.forEach(item => mergedMap.set(item.id, item));
-        }
-
-        const finalJar = Array.from(mergedMap.values());
+        // 2. Fetch Local Metadata (Per-device interactions)
+        const localArchivedIds = JSON.parse(localStorage.getItem('mori_archived_reason_ids') || '[]');
         
-        // --- Cleanup Logic: Remove existing duplicates (same text + same day) ---
-        const seen = new Set();
-        const uniqueJar = finalJar.filter(item => {
-          const identifier = `${item.text}_${new Date(item.timestamp).toDateString()}`;
-          if (seen.has(identifier)) return false;
-          seen.add(identifier);
-          return true;
-        });
+        // 3. Merge: Content from Cloud + Interaction state from Local
+        const finalJar = (cloudJar || []).map(item => ({
+          ...item,
+          archived: localArchivedIds.includes(item.id)
+        }));
 
-        localStorage.setItem('mori_reasons_jar', JSON.stringify(uniqueJar));
-        setReasons(uniqueJar);
+        setReasons(finalJar);
+        
+        // Update a legacy backup for offline speed, but strictly follow Supabase source for content
+        localStorage.setItem('mori_reasons_jar', JSON.stringify(finalJar));
       } catch (e) {
-        console.error("Failed to load jar", e);
-        // Fallback to purely local if offline
+        console.warn("Failed to load synced jar, using local cache", e);
         const localJar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
         setReasons(localJar);
       }
@@ -60,22 +47,21 @@ export default function ReasonsJar() {
 
     loadJar();
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates (Shared across all devices)
     const channel = supabase
       .channel('reasons_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reasons_jar' }, () => {
-        loadJar(); // Refresh on any change
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reasons_jar' }, (payload) => {
+        // When a new note is added anywhere, tell ALL devices to refresh so it appears in the jar
+        loadJar(); 
       })
       .subscribe();
 
-    window.addEventListener('storage', loadJar);
     return () => {
-      window.removeEventListener('storage', loadJar);
       supabase.removeChannel(channel);
     };
   }, []);
 
-  // Filter notes for the jar (only unarchived)
+  // Filter notes for the jar (only unarchived on THIS device)
   const activeNotes = useMemo(() => {
     return reasons
       .filter(r => !r.archived)
@@ -84,36 +70,31 @@ export default function ReasonsJar() {
         left: `${15 + Math.random() * 70}%`,
         bottom: `${10 + Math.random() * 60}%`,
         rotation: Math.random() * 360,
-        color: i % 2 === 0 ? '#d4e8ff' : '#ffe4e1', // Alternating Blue and Pink
+        color: i % 2 === 0 ? '#d4e8ff' : '#ffe4e1', 
       }));
   }, [reasons]);
 
-  // Filter archived notes
+  // Filter archived notes (on THIS device)
   const archivedNotes = useMemo(() => {
     return reasons
       .filter(r => r.archived)
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [reasons]);
 
-  const handleArchive = async (reason) => {
-    try {
-      const updatedReasons = reasons.map(r => 
-        r.id === reason.id ? { ...r, archived: true } : r
-      );
-      setReasons(updatedReasons);
-      localStorage.setItem('mori_reasons_jar', JSON.stringify(updatedReasons));
-      
-      // Sync archive status to Supabase
-      await supabase
-        .from('reasons_jar')
-        .update({ archived: true })
-        .eq('id', reason.id);
+  const handleArchive = (reason) => {
+    // 1. Only update LOCALLY. This makes interaction device-specific.
+    const localArchivedIds = JSON.parse(localStorage.getItem('mori_archived_reason_ids') || '[]');
+    if (!localArchivedIds.includes(reason.id)) {
+        const updatedIds = [...localArchivedIds, reason.id];
+        localStorage.setItem('mori_archived_reason_ids', JSON.stringify(updatedIds));
 
-      trackReasonArchived(reason.text);
-      setSelectedReason(null);
-    } catch (e) {
-      console.error("Failed to archive reason in cloud", e);
+        const updatedReasons = reasons.map(r => 
+          r.id === reason.id ? { ...r, archived: true } : r
+        );
+        setReasons(updatedReasons);
+        trackReasonArchived(reason.text);
     }
+    setSelectedReason(null);
   };
 
   return (
