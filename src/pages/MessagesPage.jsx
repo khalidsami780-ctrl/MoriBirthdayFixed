@@ -10,6 +10,7 @@ import { milestones } from '../data/timeCapsule.js'
 import { PINNED_MESSAGE_IDS } from '../data/pinnedConfig.js'
 import { useTelegramBot } from '../hooks/useTelegramBot.js'
 import { useNotifications } from '../hooks/useNotifications.js'
+import { supabase } from '../lib/supabase.js'
 
 /* ═══════════════════════════════════════════════════════════════
    SHARED ANIMATION VARIANTS
@@ -643,12 +644,47 @@ function MessagesSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
 
-  // Load Remote Messages from localStorage
-  const remoteMessages = useMemo(() => {
+  // Load Remote Messages from Supabase + localStorage
+  const [remoteMessages, setRemoteMessages] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('mori_remote_messages') || '[]')
     } catch { return [] }
-  }, [])
+  })
+
+  useEffect(() => {
+    const fetchRemoteMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('remote_messages')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        if (data) {
+          const formatted = data.map(m => ({ ...m, isRemote: true, createdAt: Number(m.created_at) }));
+          setRemoteMessages(prev => {
+            const mergedMap = new Map();
+            prev.forEach(p => mergedMap.set(p.id, p));
+            formatted.forEach(f => mergedMap.set(f.id, f));
+            const final = Array.from(mergedMap.values());
+            localStorage.setItem('mori_remote_messages', JSON.stringify(final));
+            return final;
+          });
+        }
+      } catch (e) {
+        console.warn("Could not fetch remote messages from cloud", e);
+      }
+    };
+
+    fetchRemoteMessages();
+
+    const channel = supabase
+      .channel('messages_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'remote_messages' }, fetchRemoteMessages)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const allMessages = useMemo(() => [...messagePosts, ...remoteMessages], [remoteMessages])
 
@@ -742,12 +778,47 @@ function AdviceSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
 
-  // Load Remote Tips from localStorage
-  const remoteTips = useMemo(() => {
+  // Load Remote Tips from Supabase + localStorage
+  const [remoteTips, setRemoteTips] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('mori_remote_tips') || '[]')
     } catch { return [] }
-  }, [])
+  })
+
+  useEffect(() => {
+    const fetchRemoteTips = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('remote_tips')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        if (data) {
+          const formatted = data.map(t => ({ ...t, isRemote: true, createdAt: Number(t.created_at) }));
+          setRemoteTips(prev => {
+            const mergedMap = new Map();
+            prev.forEach(p => mergedMap.set(p.id, p));
+            formatted.forEach(f => mergedMap.set(f.id, f));
+            const final = Array.from(mergedMap.values());
+            localStorage.setItem('mori_remote_tips', JSON.stringify(final));
+            return final;
+          });
+        }
+      } catch (e) {
+        console.warn("Could not fetch remote tips from cloud", e);
+      }
+    };
+
+    fetchRemoteTips();
+
+    const channel = supabase
+      .channel('tips_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'remote_tips' }, fetchRemoteTips)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const allTips = useMemo(() => [...advicePosts, ...remoteTips], [remoteTips])
 

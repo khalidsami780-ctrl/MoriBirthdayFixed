@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTelegramBot } from '../hooks/useTelegramBot.js';
+import { supabase } from '../lib/supabase.js';
 
 /**
  * ReasonsJar
@@ -14,34 +15,64 @@ export default function ReasonsJar() {
   const { trackReasonOpened, trackReasonArchived } = useTelegramBot();
 
   useEffect(() => {
-    const loadJar = () => {
+    const loadJar = async () => {
       try {
-        let jar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
+        // 1. Load from LocalStorage (for offline/speed)
+        let localJar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
+        
+        // 2. Fetch from Supabase
+        const { data: cloudJar, error } = await supabase
+          .from('reasons_jar')
+          .select('*')
+          .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+
+        // 3. Merge and deduplicate
+        const mergedMap = new Map();
+        // Local first
+        localJar.forEach(item => mergedMap.set(item.id, item));
+        // Cloud overwrites local (since cloud is the shared truth)
+        if (cloudJar) {
+          cloudJar.forEach(item => mergedMap.set(item.id, item));
+        }
+
+        const finalJar = Array.from(mergedMap.values());
         
         // --- Cleanup Logic: Remove existing duplicates (same text + same day) ---
         const seen = new Set();
-        const uniqueJar = jar.filter(item => {
+        const uniqueJar = finalJar.filter(item => {
           const identifier = `${item.text}_${new Date(item.timestamp).toDateString()}`;
           if (seen.has(identifier)) return false;
           seen.add(identifier);
           return true;
         });
 
-        if (uniqueJar.length !== jar.length) {
-            localStorage.setItem('mori_reasons_jar', JSON.stringify(uniqueJar));
-            jar = uniqueJar;
-        }
-        // -----------------------------------------------------------------------
-
-        setReasons(jar);
+        localStorage.setItem('mori_reasons_jar', JSON.stringify(uniqueJar));
+        setReasons(uniqueJar);
       } catch (e) {
         console.error("Failed to load jar", e);
+        // Fallback to purely local if offline
+        const localJar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
+        setReasons(localJar);
       }
     };
 
     loadJar();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('reasons_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reasons_jar' }, () => {
+        loadJar(); // Refresh on any change
+      })
+      .subscribe();
+
     window.addEventListener('storage', loadJar);
-    return () => window.removeEventListener('storage', loadJar);
+    return () => {
+      window.removeEventListener('storage', loadJar);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Filter notes for the jar (only unarchived)
@@ -64,14 +95,25 @@ export default function ReasonsJar() {
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [reasons]);
 
-  const handleArchive = (reason) => {
-    const updatedReasons = reasons.map(r => 
-      r.id === reason.id ? { ...r, archived: true } : r
-    );
-    setReasons(updatedReasons);
-    localStorage.setItem('mori_reasons_jar', JSON.stringify(updatedReasons));
-    trackReasonArchived(reason.text);
-    setSelectedReason(null);
+  const handleArchive = async (reason) => {
+    try {
+      const updatedReasons = reasons.map(r => 
+        r.id === reason.id ? { ...r, archived: true } : r
+      );
+      setReasons(updatedReasons);
+      localStorage.setItem('mori_reasons_jar', JSON.stringify(updatedReasons));
+      
+      // Sync archive status to Supabase
+      await supabase
+        .from('reasons_jar')
+        .update({ archived: true })
+        .eq('id', reason.id);
+
+      trackReasonArchived(reason.text);
+      setSelectedReason(null);
+    } catch (e) {
+      console.error("Failed to archive reason in cloud", e);
+    }
   };
 
   return (

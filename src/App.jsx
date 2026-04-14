@@ -20,8 +20,8 @@ const GlobalAtmosphere = lazy(() => import('./components/GlobalAtmosphere.jsx'))
 const AtmosphereController = lazy(() => import('./components/AtmosphereController.jsx'))
 
 import useActiveTheme from './hooks/useActiveTheme.js'
-
 import { useTelegramBot } from './hooks/useTelegramBot.js'
+import { useSupabaseSync } from './hooks/useSupabaseSync.js'
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
   return (
@@ -50,6 +50,9 @@ export default function App() {
   const [showEnhancements, setShowEnhancements] = useState(false)
   const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement } = useTelegramBot()
   const { themeStyles } = useActiveTheme()
+  
+  // Migrate old localStorage data to Supabase (Runs once per device)
+  useSupabaseSync()
 
   useEffect(() => {
     // Initial tracking on app mount

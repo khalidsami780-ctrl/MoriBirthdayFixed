@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTelegramBot } from '../hooks/useTelegramBot'
 import { createPortal } from 'react-dom'
+import { supabase } from '../lib/supabase'
 
 /**
  * LiveNote Component
@@ -16,37 +17,72 @@ export default function LiveNote() {
   const isMedia = note && (note.type === 'image' || note.type === 'video' || note.type === 'video_note');
 
   useEffect(() => {
-    const stored = localStorage.getItem('mori_live_note')
-    if (stored) {
+    const loadNote = async () => {
       try {
-        const parsed = JSON.parse(stored)
-        const dismissed = localStorage.getItem('mori_live_note_dismissed')
-        
-        // Only show if it wasn't dismissed
-        if (dismissed !== String(parsed.timestamp)) {
-          setNote(parsed)
-          setShow(true)
+        // 1. Initial Load from Supabase (shared truth)
+        const { data: cloudNoteArr, error } = await supabase
+          .from('live_note')
+          .select('data, timestamp')
+          .eq('id', 1)
+          .single();
+
+        let currentNote = null;
+        if (!error && cloudNoteArr?.data) {
+          currentNote = cloudNoteArr.data;
         } else {
-          setNote(parsed) // Load it but don't show it
+          // Fallback to local if cloud is empty or error
+          const local = localStorage.getItem('mori_live_note');
+          if (local) currentNote = JSON.parse(local);
+        }
+
+        if (currentNote) {
+          const dismissed = localStorage.getItem('mori_live_note_dismissed');
+          if (dismissed !== String(currentNote.timestamp)) {
+            setNote(currentNote);
+            setShow(true);
+          } else {
+            setNote(currentNote);
+          }
         }
       } catch (e) {
-        setNote({ text: stored, timestamp: Date.now() })
-        setShow(true)
+        console.warn("LiveNote mount fetch failed", e);
       }
-    }
+    };
 
-    // Start polling the bot for new messages from Khalid
-    const cleanup = pollTelegramReplies(
-      () => {}, // ignore standard button replies here
+    loadNote();
+
+    // 2. Real-time Subscription
+    const channel = supabase
+      .channel('live_note_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_note' }, (payload) => {
+        if (payload.new && payload.new.data) {
+          const newNote = payload.new.data;
+          setNote(newNote);
+          setShow(true);
+          setHasReacted(false);
+          // Persist locally too
+          localStorage.setItem('mori_live_note', JSON.stringify(newNote));
+        }
+      })
+      .subscribe();
+
+    // 3. Keep existing bot polling cleanup
+    const botCleanup = pollTelegramReplies(
+      () => {}, 
       (newNote) => {
-        setNote(newNote)
-        setShow(true)
-        setHasReacted(false) // reset reaction status for the new message
+        // We handle logic via Supabase real-time now for multi-device sync,
+        // but keeping this hook ensures the active polling device updates instantly.
+        setNote(newNote);
+        setShow(true);
+        setHasReacted(false);
       }
-    )
+    );
 
-    return cleanup
-  }, [pollTelegramReplies])
+    return () => {
+      botCleanup();
+      supabase.removeChannel(channel);
+    };
+  }, [pollTelegramReplies]);
 
   const handleHeart = () => {
     if (hasReacted || !note) return

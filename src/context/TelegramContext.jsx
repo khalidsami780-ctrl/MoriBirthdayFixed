@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { TelegramContext } from './TelegramContextCore.jsx';
 import { moodDatabase } from '../data/moodMessages.js';
+import { supabase } from '../lib/supabase.js';
 
 const TELEGRAM_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AAGtCOV-QhKjgZxR4XqimtmjyKvtFpcuso8";
 const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
@@ -89,10 +90,15 @@ export function TelegramProvider({ children }) {
             if (text.match(/^[/\\]reason\s+/i)) {
               const reason = text.replace(/^[/\\]reason\s+/i, '').trim();
               if (reason) {
+                // Keep local for immediate feedback
                 const jar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
                 if (!jar.some(item => item.id === update.message.message_id)) {
-                  jar.push({ id: update.message.message_id, text: reason, timestamp: Date.now(), archived: false });
+                  const newReason = { id: update.message.message_id, text: reason, timestamp: Date.now(), archived: false };
+                  jar.push(newReason);
                   localStorage.setItem('mori_reasons_jar', JSON.stringify(jar));
+                  
+                  // Sync to Supabase
+                  await supabase.from('reasons_jar').upsert(newReason);
                 }
               }
               continue;
@@ -113,15 +119,19 @@ export function TelegramProvider({ children }) {
                     const url = await getTelegramFileUrl(photo.file_id);
                     if (url) media.push({ url, type: 'image' });
                   }
-                  remoteMsgs.push({
+                  const newMsg = {
                     id: `remote-${update.message.message_id}`,
                     title,
                     text: content,
                     media,
-                    createdAt: Date.now(),
-                    isRemote: true
-                  });
+                    created_at: Date.now(),
+                  };
+                  remoteMsgs.push({ ...newMsg, isRemote: true });
                   localStorage.setItem('mori_remote_messages', JSON.stringify(remoteMsgs));
+                  
+                  // Sync to Supabase
+                  await supabase.from('remote_messages').upsert(newMsg);
+                  
                   listenersRef.current.onReply.forEach(cb => cb("✨ تمت إضافة رسالة دائمة للموقع"));
                 }
               }
@@ -134,14 +144,18 @@ export function TelegramProvider({ children }) {
               if (content) {
                 const remoteTips = JSON.parse(localStorage.getItem('mori_remote_tips') || '[]');
                 if (!remoteTips.some(t => t.id === `remote-tip-${update.message.message_id}`)) {
-                  remoteTips.push({
+                  const newTip = {
                     id: `remote-tip-${update.message.message_id}`,
                     text: content,
                     title: "نصيحة إضافية من خالد",
-                    createdAt: Date.now(),
-                    isRemote: true
-                  });
+                    created_at: Date.now(),
+                  };
+                  remoteTips.push({ ...newTip, isRemote: true });
                   localStorage.setItem('mori_remote_tips', JSON.stringify(remoteTips));
+                  
+                  // Sync to Supabase
+                  await supabase.from('remote_tips').upsert(newTip);
+                  
                   listenersRef.current.onReply.forEach(cb => cb("💡 تمت إضافة نصيحة جديدة للموقع"));
                 }
               }
@@ -181,6 +195,9 @@ export function TelegramProvider({ children }) {
 
             if (noteObj) {
               localStorage.setItem('mori_live_note', JSON.stringify(noteObj));
+              // Sync to Supabase (always overwrite ID 1 with latest note)
+              await supabase.from('live_note').upsert({ id: 1, data: noteObj, timestamp: Date.now() });
+              
               listenersRef.current.onNote.forEach(cb => cb(noteObj));
             }
           }
