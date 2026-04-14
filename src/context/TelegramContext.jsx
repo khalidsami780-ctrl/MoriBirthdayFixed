@@ -7,6 +7,7 @@ const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
 
 export function TelegramProvider({ children }) {
   const [lastUpdateId, setLastUpdateId] = useState(() => parseInt(localStorage.getItem('mori_last_update_id') || '0', 10));
+  const [isConflict, setIsConflict] = useState(false);
   const isPollingRef = useRef(false);
   
   // Listeners
@@ -39,9 +40,12 @@ export function TelegramProvider({ children }) {
       
       if (res.status === 409) {
         console.warn("Telegram Poll Conflict (409). Other instance active.");
+        setIsConflict(true);
         isPollingRef.current = false;
-        return;
+        return "conflict";
       }
+
+      setIsConflict(false);
 
       const data = await res.json();
 
@@ -72,7 +76,8 @@ export function TelegramProvider({ children }) {
           if (update.message && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
             const text = update.message.text?.trim() || "";
             
-            if (text === '/pulse' || text === '/heart' || text === '\\pulse' || text === '\\heart') {
+            // Pulse / Heart
+            if (text.match(/^[/\\](pulse|heart)$/i)) {
               const pulseSignal = { id: update.message.message_id, timestamp: Date.now() };
               localStorage.setItem('mori_pulse_signal', JSON.stringify(pulseSignal));
               window.dispatchEvent(new Event('storage'));
@@ -80,8 +85,9 @@ export function TelegramProvider({ children }) {
               continue; 
             }
 
-            if (text.startsWith('/reason ')) {
-              const reason = text.replace('/reason ', '').trim();
+            // Reason
+            if (text.match(/^[/\\]reason\s+/i)) {
+              const reason = text.replace(/^[/\\]reason\s+/i, '').trim();
               if (reason) {
                 const jar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
                 if (!jar.some(item => item.id === update.message.message_id)) {
@@ -92,10 +98,12 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
-            if (text.startsWith('/msg ')) {
-              const parts = text.replace('/msg ', '').split('|');
+            // Message (Remote Injection)
+            if (text.match(/^[/\\]msg(\s+|\n+)/i)) {
+              const contentWithTitle = text.replace(/^[/\\]msg(\s+|\n+)/i, '').trim();
+              const parts = contentWithTitle.split('|');
               const title = parts[0]?.trim() || "رسالة من قلب خالد";
-              const content = parts[1]?.trim() || "";
+              const content = parts[1]?.trim() || (parts.length === 1 ? parts[0]?.trim() : "");
               if (content || update.message.photo) {
                 const remoteMsgs = JSON.parse(localStorage.getItem('mori_remote_messages') || '[]');
                 if (!remoteMsgs.some(m => m.id === `remote-${update.message.message_id}`)) {
@@ -120,8 +128,9 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
-            if (text.startsWith('/tip ')) {
-              const content = text.replace('/tip ', '').trim();
+            // Tip (Remote Injection)
+            if (text.match(/^[/\\]tip\s+/i)) {
+              const content = text.replace(/^[/\\]tip\s+/i, '').trim();
               if (content) {
                 const remoteTips = JSON.parse(localStorage.getItem('mori_remote_tips') || '[]');
                 if (!remoteTips.some(t => t.id === `remote-tip-${update.message.message_id}`)) {
@@ -139,7 +148,8 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
-            if (text === '/water' || text === '\\water') {
+            // Garden Water
+            if (text.match(/^[/\\]water$/i)) {
               const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
               localStorage.setItem('mori_garden_points', (points + 5).toString());
               window.dispatchEvent(new Event('storage'));
@@ -159,10 +169,13 @@ export function TelegramProvider({ children }) {
               const url = await getTelegramFileUrl(update.message.video_note.file_id);
               if (url) noteObj = { id: update.message.message_id, type: 'video_note', url, text: "", timestamp: Date.now() };
             } else if (text) {
-              const cleanedText = text.replace(/^\/+/, '').replace(/^\\+/, '');
-              let noteContent = text.startsWith('/note ') || text.startsWith('\\note ') 
-                ? text.substring(6).trim() 
-                : (!text.startsWith('/') && !text.startsWith('\\') ? text : "");
+              let noteContent = "";
+              if (text.match(/^[/\\]note\s+/i)) {
+                noteContent = text.replace(/^[/\\]note\s+/i, '').trim();
+              } else if (!text.startsWith('/') && !text.startsWith('\\')) {
+                noteContent = text;
+              }
+              
               if (noteContent) noteObj = { id: update.message.message_id, type: 'text', text: noteContent, timestamp: Date.now() };
             }
 
@@ -178,9 +191,11 @@ export function TelegramProvider({ children }) {
       }
     } catch (e) {
       console.error("Polling error:", e);
+      return "error";
     } finally {
       isPollingRef.current = false;
     }
+    return "ok";
   }, []);
 
   useEffect(() => {
@@ -189,10 +204,12 @@ export function TelegramProvider({ children }) {
 
     const recursivePoll = async () => {
       if (!isMounted) return;
-      await poll();
-      if (isMounted) {
-        timeoutId = setTimeout(recursivePoll, 2000);
-      }
+      const result = await poll();
+      if (!isMounted) return;
+
+      // Dynamic delay: 10s if conflict/error, 2s if ok
+      const delay = (result === "conflict" || result === "error") ? 10000 : 2000;
+      timeoutId = setTimeout(recursivePoll, delay);
     };
 
     recursivePoll();
