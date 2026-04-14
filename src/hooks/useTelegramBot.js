@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { moodDatabase } from '../data/moodMessages.js';
-import { useTelegram } from '../context/TelegramContext.jsx';
+import { useTelegram } from '../context/TelegramContextCore.jsx';
 
 const isMoriDevice = () => {
   const isTouch = navigator.maxTouchPoints > 0
@@ -259,10 +259,21 @@ export function useTelegramBot() {
     await sendTelegramMessage(`🎨 موري غيرت جو الموقع دلوقتي لـ: [${label}] ✨`);
   };
 
+  const trackReasonOpened = async (text) => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`🏺 موري سحبت ورقة من "برطمان المشاعر" وقرأت:\n"${text}" ❤️`);
+  };
+
+  const trackReasonArchived = async (text) => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`📁 موري أرشفة ورقة في البرطمان:\n"${text}" ✅`);
+  };
+
   return {
     trackSafeBoxOpen, checkWeeklyReport, checkFirstVisitToday, pollTelegramReplies,
     buildMessageWithMood, sendPulse, sendEmergency, sendReaction, trackMessageRead,
     trackMood, trackReaction, trackSectionEntrance, trackSongPlay, trackFavorite,
-    sendNoteReaction, trackDeepEngagement, trackAtmosphereChange, sendTelegramMessage, sendTelegramMedia
+    sendNoteReaction, trackDeepEngagement, trackAtmosphereChange, trackReasonOpened,
+    trackReasonArchived, sendTelegramMessage, sendTelegramMedia
   };
 }

@@ -149,7 +149,7 @@ export default function ReasonsJar() {
                 <span style={S.archiveCount}>{archivedNotes.length} رسالة مؤرشفة</span>
               </div>
               
-              <div style={S.archiveGrid}>
+              <div className="reasons-archive-scroll" style={S.archiveGrid}>
                 {archivedNotes.map((note, idx) => (
                   <motion.div
                     key={note.id}
@@ -351,20 +351,7 @@ const S = {
     overflowY: 'auto',
     overflowX: 'hidden', // Strictly prevent horizontal scroll
     padding: '0 10px 15px',
-    scrollbarWidth: 'thin',
-    scrollbarColor: 'rgba(168, 200, 248, 0.2) transparent',
-    // Custom scrollbar for Webkit
     WebkitOverflowScrolling: 'touch',
-    '&::-webkit-scrollbar': {
-      width: '4px',
-    },
-    '&::-webkit-scrollbar-track': {
-      background: 'transparent',
-    },
-    '&::-webkit-scrollbar-thumb': {
-      background: 'rgba(168, 200, 248, 0.2)',
-      borderRadius: '10px',
-    },
   },
   archiveCard: {
     background: 'rgba(255, 255, 255, 0.03)',

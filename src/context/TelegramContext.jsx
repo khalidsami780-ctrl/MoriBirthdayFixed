@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { TelegramContext } from './TelegramContextCore.jsx';
 import { moodDatabase } from '../data/moodMessages.js';
-
-const TelegramContext = createContext();
 
 const TELEGRAM_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AAGtCOV-QhKjgZxR4XqimtmjyKvtFpcuso8";
 const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
@@ -38,7 +37,6 @@ export function TelegramProvider({ children }) {
       const currentLastId = parseInt(localStorage.getItem('mori_last_update_id') || '0', 10);
       const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getUpdates?offset=${currentLastId + 1}&timeout=30`);
       
-      // Handle Conflict 409 gracefully
       if (res.status === 409) {
         console.warn("Telegram Poll Conflict (409). Other instance active.");
         isPollingRef.current = false;
@@ -53,7 +51,6 @@ export function TelegramProvider({ children }) {
         for (const update of data.result) {
           maxId = Math.max(maxId, update.update_id);
 
-          // Handle Callback Queries (SafeBox Buttons)
           if (update.callback_query) {
             const replyText = update.callback_query.data;
             let toastText = "";
@@ -72,19 +69,17 @@ export function TelegramProvider({ children }) {
             });
           }
 
-          // Handle Messages (Notes, Pulse, Reasons, Garden)
           if (update.message && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
             const text = update.message.text?.trim() || "";
             
-            // Pulse / Heart
-            if (text === '/pulse' || text === '/heart') {
+            if (text === '/pulse' || text === '/heart' || text === '\\pulse' || text === '\\heart') {
               const pulseSignal = { id: update.message.message_id, timestamp: Date.now() };
               localStorage.setItem('mori_pulse_signal', JSON.stringify(pulseSignal));
+              window.dispatchEvent(new Event('storage'));
               listenersRef.current.onPulse.forEach(cb => cb(pulseSignal));
               continue; 
             }
 
-            // Reason / Jar
             if (text.startsWith('/reason ')) {
               const reason = text.replace('/reason ', '').trim();
               if (reason) {
@@ -97,7 +92,6 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
-            // Permanent Remote Message (/msg Title | Content)
             if (text.startsWith('/msg ')) {
               const parts = text.replace('/msg ', '').split('|');
               const title = parts[0]?.trim() || "رسالة من قلب خالد";
@@ -126,7 +120,6 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
-            // Permanent Remote Tip (/tip Content)
             if (text.startsWith('/tip ')) {
               const content = text.replace('/tip ', '').trim();
               if (content) {
@@ -146,15 +139,14 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
-            // Garden Water
-            if (text === '/water') {
-              const points = parseInt(localStorage.getItem('mori_garden_points') || '0', 10);
+            if (text === '/water' || text === '\\water') {
+              const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
               localStorage.setItem('mori_garden_points', (points + 5).toString());
-              localStorage.setItem('mori_last_watered', Date.now().toString());
+              window.dispatchEvent(new Event('storage'));
+              listenersRef.current.onReply.forEach(cb => cb("💧 موري: خالد سقى الزرعة ليكي ونقاطها زادت! ✨"));
               continue;
             }
 
-            // LiveNote (Rich Media)
             let noteObj = null;
             if (update.message.photo) {
               const photo = update.message.photo[update.message.photo.length - 1];
@@ -167,7 +159,10 @@ export function TelegramProvider({ children }) {
               const url = await getTelegramFileUrl(update.message.video_note.file_id);
               if (url) noteObj = { id: update.message.message_id, type: 'video_note', url, text: "", timestamp: Date.now() };
             } else if (text) {
-              let noteContent = text.startsWith('/note ') ? text.replace('/note ', '').trim() : (!text.startsWith('/') ? text : "");
+              const cleanedText = text.replace(/^\/+/, '').replace(/^\\+/, '');
+              let noteContent = text.startsWith('/note ') || text.startsWith('\\note ') 
+                ? text.substring(6).trim() 
+                : (!text.startsWith('/') && !text.startsWith('\\') ? text : "");
               if (noteContent) noteObj = { id: update.message.message_id, type: 'text', text: noteContent, timestamp: Date.now() };
             }
 
@@ -196,7 +191,6 @@ export function TelegramProvider({ children }) {
       if (!isMounted) return;
       await poll();
       if (isMounted) {
-        // Wait 2 seconds between polls to give Telegram a breather
         timeoutId = setTimeout(recursivePoll, 2000);
       }
     };
@@ -209,7 +203,6 @@ export function TelegramProvider({ children }) {
     };
   }, [poll]);
 
-  // Subscription methods
   const subscribe = useCallback((type, callback) => {
     if (listenersRef.current[type]) {
       listenersRef.current[type].add(callback);
@@ -233,12 +226,4 @@ export function TelegramProvider({ children }) {
       {children}
     </TelegramContext.Provider>
   );
-}
-
-export function useTelegram() {
-  const context = useContext(TelegramContext);
-  if (!context) {
-    throw new Error('useTelegram must be used within a TelegramProvider');
-  }
-  return context;
 }
