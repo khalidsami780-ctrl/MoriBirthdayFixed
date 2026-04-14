@@ -223,25 +223,42 @@ export default function ReasonsJar() {
               style={S.parchment}
               onClick={(e) => e.stopPropagation()}
             >
-              <button style={S.close} onClick={() => setSelectedReason(null)}>✕</button>
-              <div style={S.parchmentContent}>
-                <p style={S.parchmentText}>{selectedReason.text}</p>
-                <time style={S.parchmentDate}>
-                    {new Date(selectedReason.timestamp).toLocaleDateString('ar-EG', {
-                        day: 'numeric', month: 'long', year: 'numeric'
-                    })}
-                </time>
+              <button style={S.parchmentClose} onClick={() => setSelectedReason(null)}>✕</button>
+              
+              <div 
+                className="reasons-parchment-scroll"
+                style={S.parchmentScrollArea}
+              >
+                <div style={S.parchmentContent}>
+                  <p style={S.parchmentText}>{selectedReason.text}</p>
+                  <time style={S.parchmentDate}>
+                      {new Date(selectedReason.timestamp).toLocaleDateString('ar-EG', {
+                          day: 'numeric', month: 'long', year: 'numeric'
+                      })}
+                  </time>
 
-                {!selectedReason.archived && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleArchive(selectedReason)}
-                    style={S.archiveBtn}
-                  >
-                    نقل للأرشيف ✅
-                  </motion.button>
-                )}
+                  {!selectedReason.archived && (
+                    <div style={S.parchmentActions}>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleArchive(selectedReason)}
+                        style={S.archiveBtn}
+                      >
+                        نقل للأرشيف ✅
+                      </motion.button>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setSelectedReason(null)}
+                        style={S.secondaryCloseBtn}
+                      >
+                        إغلاق ✕
+                      </motion.button>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -424,8 +441,9 @@ const S = {
   parchment: {
     position: 'relative',
     width: 'min(90%, 450px)',
+    maxHeight: '85vh',
     background: '#f8f2e3',
-    padding: '50px 30px 40px',
+    padding: '0px',
     borderRadius: '10px',
     boxShadow: '0 30px 90px rgba(0,0,0,0.7)',
     backgroundImage: 'linear-gradient(rgba(0,0,0,0.04) 2px, transparent 2px)',
@@ -433,6 +451,13 @@ const S = {
     color: '#3e2723',
     textAlign: 'center',
     direction: 'rtl',
+    overflow: 'hidden',
+  },
+  parchmentScrollArea: {
+    maxHeight: '85vh',
+    overflowY: 'auto',
+    padding: '50px 30px 40px',
+    WebkitOverflowScrolling: 'touch',
   },
   parchmentContent: {
     border: '3px double rgba(93, 64, 55, 0.15)',
@@ -450,6 +475,7 @@ const S = {
     margin: 0,
     color: '#4e342e',
     textAlign: 'center',
+    whiteSpace: 'pre-wrap', // Preserve newlines
   },
   parchmentDate: {
     marginTop: '30px',
@@ -457,8 +483,14 @@ const S = {
     opacity: 0.6,
     fontStyle: 'italic',
   },
-  archiveBtn: {
+  parchmentActions: {
+    display: 'flex',
+    gap: '15px',
     marginTop: '35px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  archiveBtn: {
     background: '#5d4037',
     color: '#fff',
     border: 'none',
@@ -470,10 +502,21 @@ const S = {
     boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
     transition: 'all 0.3s ease',
   },
+  secondaryCloseBtn: {
+    background: 'rgba(93, 64, 55, 0.1)',
+    color: '#5d4037',
+    border: '1px solid rgba(93, 64, 55, 0.2)',
+    padding: '12px 30px',
+    borderRadius: '30px',
+    cursor: 'pointer',
+    fontSize: '1.1rem',
+    fontFamily: "'Scheherazade New', serif",
+    transition: 'all 0.3s ease',
+  },
   close: {
     position: 'absolute',
     top: '18px',
-    left: '20px', // Proper placement for Arabic/RTL context (Top-Left often better if list is RTL)
+    left: '20px', 
     background: 'rgba(255,255,255,0.05)',
     border: 'none',
     width: '36px',
@@ -485,6 +528,24 @@ const S = {
     fontSize: '1.2rem',
     cursor: 'pointer',
     color: 'rgba(255,255,255,0.6)',
+    transition: 'all 0.3s ease',
+    zIndex: 10,
+  },
+  parchmentClose: {
+    position: 'absolute',
+    top: '18px',
+    left: '20px', 
+    background: 'rgba(0,0,0,0.05)',
+    border: 'none',
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    color: '#3e2723',
     transition: 'all 0.3s ease',
     zIndex: 10,
   }

@@ -71,7 +71,12 @@ export default function Navbar() {
                   color: isActive ? 'var(--blue-200)' : 'rgba(255, 255, 255, 0.6)',
                 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setIsAgeOpen(false)} // Close age panel when navigating
+                onClick={() => {
+                  setIsAgeOpen(false);
+                  if (item.path === '/birthday') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
               >
                 <div style={{
                   ...S.icon,
