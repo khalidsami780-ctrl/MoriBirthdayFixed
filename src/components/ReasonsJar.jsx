@@ -113,7 +113,7 @@ export default function ReasonsJar() {
             ))}
           </AnimatePresence>
         </div>
-        <p style={S.label}>برطمان رزق الله لنا ✨</p>
+        <p style={S.label}>مخزن نبضات قلبي لمريومتي ✨</p>
         
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -121,7 +121,7 @@ export default function ReasonsJar() {
           onClick={() => setShowArchive(true)}
           style={S.archiveToggle}
         >
-          📜 سجل الكلمات الطيبات
+          📜 أرشيف وعودنا الجميلة
         </motion.button>
       </div>
 
@@ -145,7 +145,7 @@ export default function ReasonsJar() {
               <button style={S.close} onClick={() => setShowArchive(false)}>✕</button>
               
               <div style={S.archiveHeader}>
-                <h3 style={S.archiveTitle}>سجل الكلمات الطيبات 📁</h3>
+                <h3 style={S.archiveTitle}>أرشيف وعودنا الجميلة 📁</h3>
                 <span style={S.archiveCount}>{archivedNotes.length} رسالة مؤرشفة</span>
               </div>
               
@@ -175,7 +175,7 @@ export default function ReasonsJar() {
                   </motion.div>
                 ))}
                 {archivedNotes.length === 0 && (
-                  <p style={S.emptyArchive}>الأرشيف لسه مستني أول رسايل تتقرأ... ☕</p>
+                  <p style={S.emptyArchive}>لسه مفيش نبضات مؤرشفة.. استمتعي بكل لحظة يا روحي ☕</p>
                 )}
               </div>
             </motion.div>
