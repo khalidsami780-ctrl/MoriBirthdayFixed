@@ -254,10 +254,15 @@ export function useTelegramBot() {
     localStorage.setItem(`engagement_${minutes}_time`, today);
   };
 
+  const trackAtmosphereChange = async (label) => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`🎨 موري غيرت جو الموقع دلوقتي لـ: [${label}] ✨`);
+  };
+
   return {
     trackSafeBoxOpen, checkWeeklyReport, checkFirstVisitToday, pollTelegramReplies,
     buildMessageWithMood, sendPulse, sendEmergency, sendReaction, trackMessageRead,
     trackMood, trackReaction, trackSectionEntrance, trackSongPlay, trackFavorite,
-    sendNoteReaction, trackDeepEngagement, sendTelegramMessage, sendTelegramMedia
+    sendNoteReaction, trackDeepEngagement, trackAtmosphereChange, sendTelegramMessage, sendTelegramMedia
   };
 }

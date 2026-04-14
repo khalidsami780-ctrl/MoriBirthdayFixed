@@ -27,35 +27,39 @@ export default function PulseOverlay() {
     const triggerPulse = (signal) => {
         setActivePulse(signal)
         
-        // VIBRATION: Simulate a heart pulse (vibrate, pause, vibrate)
         if ('vibrate' in navigator) {
             navigator.vibrate([200, 100, 200])
         }
 
-        // Auto-hide after animation
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             setActivePulse(null)
-            // Notify Khalid that it was seen if we haven't already for this ID
             const seenKey = `pulse_seen_${signal.id}`
             if (!localStorage.getItem(seenKey)) {
                 sendTelegramMessage(`💖 موري استلمت "نبضة حبك" دلوقتي وشافتها على شاشتها! ✨`)
                 localStorage.setItem(seenKey, 'true')
             }
-        }, 5000)
+        }, 6000) // 6 seconds auto-hide
+
+        return timer
     }
 
-    // Polling logic also triggers it
+    let pulseTimer = null;
+
     const cleanup = pollTelegramReplies(
         () => {}, // onReply
         () => {}, // onNote
-        (signal) => triggerPulse(signal)
+        (signal) => {
+          if (pulseTimer) clearTimeout(pulseTimer);
+          pulseTimer = triggerPulse(signal)
+        }
     )
 
     window.addEventListener('storage', handleStorage)
-    handleStorage() // Check on mount
+    handleStorage()
 
     return () => {
         cleanup()
+        if (pulseTimer) clearTimeout(pulseTimer)
         window.removeEventListener('storage', handleStorage)
     }
   }, [pollTelegramReplies, sendTelegramMessage])
@@ -68,6 +72,7 @@ export default function PulseOverlay() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           style={S.overlay}
+          onClick={() => setActivePulse(null)}
         >
           <motion.div
             initial={{ scale: 0.5, opacity: 0 }}
@@ -101,6 +106,9 @@ export default function PulseOverlay() {
           >
             خالد بيبعتلك نبضة حب دلوقتي... 💙
           </motion.p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', marginTop: '10px' }}>
+            اضغطي في أي مكان للإغلاق
+          </p>
         </motion.div>
       )}
     </AnimatePresence>,
@@ -119,7 +127,8 @@ const S = {
     justifyContent: 'center',
     background: 'radial-gradient(circle, rgba(255, 77, 77, 0.15) 0%, rgba(3, 9, 26, 0.85) 100%)',
     backdropFilter: 'blur(8px)',
-    pointerEvents: 'none',
+    pointerEvents: 'auto',
+    cursor: 'pointer',
     direction: 'rtl'
   },
   heartContainer: {

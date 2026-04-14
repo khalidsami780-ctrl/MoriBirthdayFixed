@@ -189,9 +189,24 @@ export function TelegramProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const intervalId = setInterval(poll, 15000); // Poll more frequently since it's shared
-    poll(); // Initial poll
-    return () => clearInterval(intervalId);
+    let timeoutId;
+    let isMounted = true;
+
+    const recursivePoll = async () => {
+      if (!isMounted) return;
+      await poll();
+      if (isMounted) {
+        // Wait 2 seconds between polls to give Telegram a breather
+        timeoutId = setTimeout(recursivePoll, 2000);
+      }
+    };
+
+    recursivePoll();
+
+    return () => {
+      isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [poll]);
 
   // Subscription methods
