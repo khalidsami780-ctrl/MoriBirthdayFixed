@@ -15,6 +15,9 @@ const NotificationBell = lazy(() => import('./components/NotificationBell.jsx'))
 const Navbar = lazy(() => import('./components/Navbar.jsx'))
 const LiveNote = lazy(() => import('./components/LiveNote.jsx'))
 const PulseOverlay = lazy(() => import('./components/PulseOverlay.jsx'))
+const UnityHub = lazy(() => import('./pages/UnityHub.jsx'))
+const GlobalAtmosphere = lazy(() => import('./components/GlobalAtmosphere.jsx'))
+const AtmosphereController = lazy(() => import('./components/AtmosphereController.jsx'))
 
 import useActiveTheme from './hooks/useActiveTheme.js'
 
@@ -112,6 +115,7 @@ export default function App() {
             <Route path="/birthday"  element={<BirthdayPage />} />
             <Route path="/eid"       element={<EidPage />} />
             <Route path="/messages"  element={<MessagesPage />} />
+            <Route path="/unity"     element={<UnityHub />} />
             <Route path="/safebox"   element={<SafeBox />} />
             <Route path="*"          element={<Navigate to="/birthday" replace />} />
           </Routes>
@@ -130,6 +134,8 @@ export default function App() {
             <GlobalToast />
             <LiveNote />
             <PulseOverlay />
+            <GlobalAtmosphere />
+            <AtmosphereController />
           </Suspense>
         )}
       </div>

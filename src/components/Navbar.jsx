@@ -7,6 +7,7 @@ import WorldSwitcher from '../shared/WorldSwitcher.jsx';
 const NAV_ITEMS = [
   { path: '/birthday', label: 'HOME', icon: '🏠' },
   { path: '/messages', label: 'MESSAGES', icon: '💌' },
+  { path: '/unity', label: 'الرابط', icon: '♾️' },
   { path: '/safebox', label: 'SAFEBOX', icon: '🛡️' },
   { path: '/eid', label: 'EID', icon: '🌙' },
 ];

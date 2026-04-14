@@ -1,31 +1,27 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { moodDatabase } from '../data/moodMessages.js'
 import { useTelegramBot } from '../hooks/useTelegramBot.js'
 import { useNotifications } from '../hooks/useNotifications.js'
 import SoulSignals from './SoulSignals.jsx'
+import SafeBoxInput from './SafeBoxInput.jsx'
 import { createPortal } from 'react-dom'
 
 const DISPLAY_COOLDOWN_MS = 6 * 24 * 60 * 60 * 1000 // 6 days shown to user
 const ACTUAL_COOLDOWN_MS  = 3 * 24 * 60 * 60 * 1000 // 3 days actual secret limit
 
-function getCanVentFromStorage() {
+function checkLock(type) {
   try {
-    const lastVentStr = localStorage.getItem('last_safebox_vent')
-    if (!lastVentStr) return true
-    const lastVent = Number(lastVentStr)
-    if (Number.isNaN(lastVent)) return true
-    
-    // SECRET LOGIC: Allow venting after ACTUAL_COOLDOWN_MS (3 days)
-    return Date.now() - lastVent >= ACTUAL_COOLDOWN_MS
+    const lastVent = Number(localStorage.getItem(`last_vent_${type}`));
+    if (!lastVent) return false;
+    return (Date.now() - lastVent) < ACTUAL_COOLDOWN_MS;
   } catch {
-    return true
+    return false;
   }
 }
 
 function formatRemainingTime(lastVent) {
-  // VISUAL LOGIC: Show countdown based on DISPLAY_COOLDOWN_MS (6 days)
   const diff = DISPLAY_COOLDOWN_MS - (Date.now() - lastVent);
   if (diff <= 0) return null;
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -42,12 +38,16 @@ export default function SafeBox() {
   const [activeMessage, setActiveMessage] = useState('')
   const [ventMessage, setVentMessage] = useState(() => localStorage.getItem('mori_safebox_draft') || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [canVent, setCanVent] = useState(getCanVentFromStorage)
+  const [locks, setLocks] = useState({
+      text: checkLock('text'),
+      voice: checkLock('voice'),
+      media: checkLock('media')
+  });
   const [selectedMood, setSelectedMood] = useState(null)
   const [shouldPoll, setShouldPoll] = useState(false)
   const comfortTimeoutRef = useRef(null)
   
-  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage, trackMood } = useTelegramBot()
+  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage, sendTelegramMedia, trackMood } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   useEffect(() => {
@@ -64,7 +64,6 @@ export default function SafeBox() {
   }, [shouldPoll, pollTelegramReplies, pushNotification])
 
   const handleComfortedClick = () => {
-    // Notify Khalid that she felt reassured
     if (selectedMood && activeMessage) {
       const moodLabel = moodDatabase[selectedMood]?.label || selectedMood;
       sendTelegramMessage(`📩 موري قرأت رسالة طمأنينة!\n• الحالة: [${moodLabel}]\n• الرسالة:\n"${activeMessage}" 💙`);
@@ -83,10 +82,7 @@ export default function SafeBox() {
     const randomIdx = Math.floor(Math.random() * messages.length)
     setActiveMessage(messages[randomIdx])
 
-    // Track weekly mood stats for the professional report (Tablet-only)
     trackMood(moodKey);
-    
-    // Store as active mood for Global Theme syncing
     localStorage.setItem('mori_active_mood', moodKey);
     localStorage.setItem('mori_mood_set_time', Date.now().toString());
 
@@ -97,61 +93,93 @@ export default function SafeBox() {
     if (comfortTimeoutRef.current) clearTimeout(comfortTimeoutRef.current)
   }, [])
 
-  // DRAFT PERSISTENCE: Save draft on every change
   useEffect(() => {
     if (!isSubmitting) {
       localStorage.setItem('mori_safebox_draft', ventMessage)
     }
   }, [ventMessage, isSubmitting])
 
-  const handleVentingSubmit = async () => {
-    if(!ventMessage.trim()) return;
+  const refreshLocks = () => {
+    setLocks({
+        text: checkLock('text'),
+        voice: checkLock('voice'),
+        media: checkLock('media')
+    });
+  };
+
+  const handleTextSubmit = async (text) => {
+    if(locks.text || !text.trim()) return;
     setIsSubmitting(true);
-    const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AAGtCOV-QhKjgZxR4XqimtmjyKvtFpcuso8";
-    const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
     const timestampDate = new Date().toLocaleString('ar-EG');
-    const baseText = `🚨 خطاب من صندوق الطمأنينة (SafeBox)\n🕚 الوقت: ${timestampDate}\n\nرسالة مريومتي:\n" ${ventMessage.trim()} "`;
-    const text = buildMessageWithMood(selectedMood, baseText);
+    const baseText = `🚨 خطاب من صندوق الطمأنينة (SafeBox)\n🕚 الوقت: ${timestampDate}\n\nرسالة مريومتي:\n" ${text.trim()} "`;
+    const finalMsg = buildMessageWithMood(selectedMood, baseText);
     
     try {
-      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          chat_id: chatId, 
-          text: text,
-          reply_markup: {
-            inline_keyboard: [[
-              { text: "💙 وصلتني", callback_data: "reply_received" },
-              { text: "🤲 بدعيلك", callback_data: "reply_pray" },
-              { text: "✨ أنتِ بخير", callback_data: "reply_ok" }
-            ]]
-          }
-        })
+      await sendTelegramMessage(finalMsg, {
+        reply_markup: {
+          inline_keyboard: [[
+            { text: "💙 وصلتني", callback_data: "reply_received" },
+            { text: "🤲 بدعيلك", callback_data: "reply_pray" },
+            { text: "✨ أنتِ بخير", callback_data: "reply_ok" }
+          ]]
+        }
       });
-      if (!res.ok) throw new Error("API error");
       
-      // Success: Clear draft and update cooldown
       localStorage.removeItem('mori_safebox_draft');
-      localStorage.setItem('last_safebox_vent', Date.now().toString());
-      
-      setCanVent(false)
-      setShouldPoll(true)
+      localStorage.setItem('last_vent_text', Date.now().toString());
+      refreshLocks();
+      setShouldPoll(true);
       handleComfortedClick(); 
     } catch (e) {
-      console.error(e)
+      console.error(e);
       handleComfortedClick();
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  const handleVoiceSubmit = async (audioBlob) => {
+    if (locks.voice) return;
+    setIsSubmitting(true);
+    const timestampDate = new Date().toLocaleString('ar-EG');
+    const caption = `🎤 بصمة صوتية من مريومتي في صندوق الأمان 💙\n🕚 الوقت: ${timestampDate}`;
+    
+    try {
+      await sendTelegramMedia('voice', audioBlob, caption);
+      localStorage.setItem('last_vent_voice', Date.now().toString());
+      refreshLocks();
+      handleComfortedClick();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMediaSubmit = async (type, file) => {
+    if (locks.media) return;
+    setIsSubmitting(true);
+    const timestampDate = new Date().toLocaleString('ar-EG');
+    const caption = `📎 ميديا من مريومتي (${type}) 💙\n🕚 الوقت: ${timestampDate}`;
+    
+    try {
+      await sendTelegramMedia(type, file, caption);
+      localStorage.setItem('last_vent_media', Date.now().toString());
+      refreshLocks();
+      handleComfortedClick();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const renderMessageText = (text) => {
     if (!text) return null;
     return text.split('\n').map((line, idx) => (
       <p key={idx} style={S.para}>{line}</p>
     ))
-  }
+  };
 
   return createPortal(
     <div style={S.portalRoot}>
@@ -307,43 +335,25 @@ export default function SafeBox() {
                       animate={{ opacity: 1, y: 0 }}
                       style={S.inner}
                     >
-                       {canVent ? (
-                         <>
-                           <h2 style={{...S.title, fontSize: '1.4rem'}}>أحكي لدودو... 📝</h2>
-                           <p style={{...S.para, fontSize: '1rem', opacity: 0.7, marginBottom: '1.5rem'}}>
-                             رسالة واحدة كل أسبوع لضمان إنها تفضل غالية ومميزة..
-                           </p>
-                           <textarea 
-                             style={S.textArea} 
-                             placeholder="اكتبي اللي واجع قلبك هنا..."
-                             value={ventMessage}
-                             onChange={e => setVentMessage(e.target.value)}
-                             disabled={isSubmitting}
-                           />
-                           <div style={{ display: 'flex', gap: '12px', marginTop: '20px', width: '100%' }}>
-                              <motion.button 
-                                style={{...S.ctaButton, flex: 2, marginTop: 0}} 
-                                onClick={handleVentingSubmit}
-                                disabled={!ventMessage.trim() || isSubmitting}
-                              >
-                                {isSubmitting ? 'جاري الإرسال...' : 'إرسال لقلب دودو 💌'}
-                              </motion.button>
-                              <motion.button 
-                                style={{...S.ctaButton, flex: 1, marginTop: 0, background: 'transparent', borderColor: 'rgba(255,255,255,0.1)'}} 
-                                onClick={() => setStage('mood_selection')}
-                              >
-                                إلغاء
-                              </motion.button>
-                           </div>
-                         </>
-                       ) : (
-                         <div style={{textAlign: 'center'}}>
-                            <div style={{fontSize: '3rem', marginBottom: '1rem'}}>⏳</div>
-                            <h2 style={S.title}>بطاقتك في حفظ قلبي 💌</h2>
-                            <p style={S.para}>هستنى رسالتك الجديدة بعد {formatRemainingTime(Number(localStorage.getItem('last_safebox_vent')))} 💙</p>
-                            <motion.button style={S.ctaButton} onClick={() => setStage('mood_selection')}>فهمت</motion.button>
-                         </div>
-                       )}
+                        <h2 style={{...S.title, fontSize: '1.4rem'}}>صندوق الطمأنينة 🕊️</h2>
+                        <p style={{...S.para, fontSize: '1rem', opacity: 0.7, marginBottom: '2rem'}}>
+                          كلماتك وصوتك رزق لقلبي.. شاركيني اللي في بالك بكل حرية 💙
+                        </p>
+
+                        <SafeBoxInput 
+                          onSend={handleTextSubmit}
+                          onVoiceSend={handleVoiceSubmit}
+                          onMediaSend={handleMediaSubmit}
+                          locks={locks}
+                          placeholder="اكتبي حاجة لخالد من قلبك..."
+                        />
+
+                        <motion.button 
+                          style={{...S.ctaButton, width: 'auto', padding: '10px 30px', background: 'transparent', borderColor: 'rgba(255,255,255,0.1)', marginTop: '20px'}} 
+                          onClick={() => setStage('mood_selection')}
+                        >
+                          رجوع
+                        </motion.button>
                     </motion.div>
                   )}
 
@@ -381,12 +391,12 @@ const S = {
     background: 'rgba(8, 20, 45, 0.7)',
     border: '1px solid rgba(168, 200, 248, 0.25)',
     borderRadius: '32px',
-    width: 'min(92%, 480px)',
-    maxHeight: 'min(90%, 850px)',
+    width: 'min(95%, 750px)',
+    maxHeight: 'min(95%, 900px)',
     overflowY: 'auto',
-    padding: 'clamp(25px, 6vh, 40px) clamp(20px, 5vw, 30px)',
+    padding: 'clamp(25px, 6vh, 50px) clamp(20px, 5vw, 40px)',
     position: 'relative',
-    boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
+    boxShadow: '0 25px 80px rgba(0,0,0,0.6)',
     textAlign: 'center',
     direction: 'rtl',
     scrollbarWidth: 'thin',

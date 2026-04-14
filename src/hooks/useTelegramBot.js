@@ -34,6 +34,23 @@ export function useTelegramBot() {
     }
   };
 
+  const sendTelegramMedia = async (type, file, caption = "") => {
+    try {
+      const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/send${type.charAt(0).toUpperCase() + type.slice(1)}`;
+      const formData = new FormData();
+      formData.append('chat_id', TELEGRAM_CHAT_ID);
+      formData.append(type, file);
+      if (caption) formData.append('caption', caption);
+
+      await fetch(url, {
+        method: 'POST',
+        body: formData // Browser sets Content-Type boundary automatically
+      });
+    } catch (e) {
+      console.error("Failed to send media", e);
+    }
+  };
+
   const trackSafeBoxOpen = useCallback(async () => {
     try {
       // TRACK ONLY ON TABLET
@@ -193,10 +210,39 @@ export function useTelegramBot() {
                     const pulseSignal = { id: update.message.message_id, timestamp: Date.now() };
                     localStorage.setItem('mori_pulse_signal', JSON.stringify(pulseSignal));
                     if (onPulse) onPulse(pulseSignal);
-                    continue; // Skip further processing for this message
+                    continue; 
                 }
 
-                // 2. Check if it's a note (e.g., starts with /note or just any text from Khalid)
+                // 2. Check for /reason command (Jar of Reasons)
+                if (text.startsWith('/reason ')) {
+                    const reason = text.replace('/reason ', '').trim();
+                    if (reason) {
+                        try {
+                            const jar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
+                            // Deduplicate by message_id
+                            if (!jar.some(item => item.id === update.message.message_id)) {
+                                jar.push({ 
+                                    id: update.message.message_id, 
+                                    text: reason, 
+                                    timestamp: Date.now(),
+                                    archived: false 
+                                });
+                                localStorage.setItem('mori_reasons_jar', JSON.stringify(jar));
+                            }
+                        } catch(e) { console.error(e); }
+                    }
+                    continue;
+                }
+
+                // 3. Check for /water command (Garden)
+                if (text === '/water') {
+                    const points = parseInt(localStorage.getItem('mori_garden_points') || '0', 10);
+                    localStorage.setItem('mori_garden_points', (points + 5).toString()); // Big boost for watering
+                    localStorage.setItem('mori_last_watered', Date.now().toString());
+                    continue;
+                }
+
+                // 4. Check if it's a note (e.g., starts with /note or just any text from Khalid)
                 let noteContent = "";
                 if (text.startsWith('/note ')) {
                     noteContent = text.replace('/note ', '').trim();
@@ -302,6 +348,10 @@ export function useTelegramBot() {
       const stats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}')
       stats[moodKey] = (stats[moodKey] || 0) + 1
       localStorage.setItem('mori_weekly_mood_stats', JSON.stringify(stats))
+      
+      // Garden tiny boost
+      const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
+      localStorage.setItem('mori_garden_points', (points + 0.2).toString());
     } catch {}
   }, []);
 
@@ -311,6 +361,10 @@ export function useTelegramBot() {
       const stats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}')
       stats[emoji] = (stats[emoji] || 0) + 1
       localStorage.setItem('mori_weekly_reaction_stats', JSON.stringify(stats))
+
+      // Garden tiny boost
+      const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
+      localStorage.setItem('mori_garden_points', (points + 0.2).toString());
     } catch {}
   }, []);
 
@@ -349,6 +403,21 @@ export function useTelegramBot() {
     await sendTelegramMessage(`❤️ موري حبت النوت اللي بعتها دلوقتي:\n"${text}"`);
   }, []);
 
+  const trackAtmosphereChange = useCallback(async (label) => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`🎨 موري غيرت جو الموقع دلوقتي لـ: [${label}] ✨`);
+  }, []);
+
+  const trackReasonOpened = useCallback(async (text) => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`💌 موري فتحت ورقة من البرطمان وقرأت: "${text}" 🍯`);
+  }, []);
+
+  const trackReasonArchived = useCallback(async (text) => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`📁 موري قامت بأرشفة الرسالة في سجل الذكريات: "${text}" ✅`);
+  }, []);
+
   const trackDeepEngagement = useCallback(async (minutes) => {
     if (!isTabletSpecific()) return;
     const cooldownKey = `engagement_${minutes}_time`;
@@ -376,6 +445,10 @@ export function useTelegramBot() {
     trackFavorite,
     sendNoteReaction,
     trackDeepEngagement,
-    sendTelegramMessage
+    trackAtmosphereChange,
+    trackReasonOpened,
+    trackReasonArchived,
+    sendTelegramMessage,
+    sendTelegramMedia
   };
 }
