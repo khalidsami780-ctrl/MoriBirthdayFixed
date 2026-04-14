@@ -65,8 +65,11 @@ export default function ReasonsJar() {
   const activeNotes = useMemo(() => {
     return reasons
       .filter(r => !r.archived)
+      // Sort by timestamp (Oldest first for numbering 1, 2, 3...)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       .map((r, i) => ({
         ...r,
+        displayIndex: i + 1, // Number 1, 2, 3...
         left: `${15 + Math.random() * 70}%`,
         bottom: `${10 + Math.random() * 60}%`,
         rotation: Math.random() * 360,
@@ -132,7 +135,9 @@ export default function ReasonsJar() {
                   backgroundColor: note.color,
                   transform: `rotate(${note.rotation}deg)`,
                 }}
-              />
+              >
+                <span style={S.noteNumber}>{note.displayIndex}</span>
+              </motion.div>
             ))}
           </AnimatePresence>
         </div>
@@ -325,6 +330,16 @@ const S = {
     cursor: 'pointer',
     boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
     border: '1px solid rgba(0,0,0,0.05)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    userSelect: 'none',
+  },
+  noteNumber: {
+    fontSize: '0.7rem',
+    fontFamily: "'Scheherazade New', serif",
+    color: 'rgba(0,0,0,0.6)',
+    fontWeight: 'bold',
   },
   label: {
     fontFamily: "'Scheherazade New', serif",
