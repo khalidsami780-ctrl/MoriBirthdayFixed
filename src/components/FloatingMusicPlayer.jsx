@@ -53,7 +53,6 @@ export default function FloatingMusicPlayer() {
     // If it was already playing, modern browsers should continue playing the new src
     if (isPlaying) {
       audioRef.current.play().catch(() => setIsPlaying(false));
-      trackSongPlay(currentTrack.title, currentTrack.artist);
     }
   }, [currentTrackIndex]); 
 
@@ -73,6 +72,21 @@ export default function FloatingMusicPlayer() {
       audioRef.current.pause();
     }
   }, [isPlaying]);
+
+  // 3. Tracking logic: Only notify Khalid if song plays for more than 5 seconds
+  useEffect(() => {
+    let trackTimer;
+    
+    if (isPlaying && currentTrack) {
+      trackTimer = setTimeout(() => {
+        trackSongPlay(currentTrack.title, currentTrack.artist);
+      }, 5000); // 5 seconds threshold
+    }
+
+    return () => {
+      if (trackTimer) clearTimeout(trackTimer);
+    };
+  }, [isPlaying, currentTrackIndex, currentTrack, trackSongPlay]);
 
   const togglePlay = (e) => {
     if (e) e.stopPropagation()
