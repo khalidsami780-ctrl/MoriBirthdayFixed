@@ -46,19 +46,33 @@ export default function FloatingMusicPlayer() {
     }
   }, [volume, isMuted])
 
-  // Play/Pause logic & Track preloading
+  // 1. Handle track loading (only when index changes)
   useEffect(() => {
-    if (!audioRef.current) return
-    
-    // Force load and start buffering when track changes
-    audioRef.current.load()
+    if (!audioRef.current) return;
+    audioRef.current.load();
+    // If it was already playing, modern browsers should continue playing the new src
+    if (isPlaying) {
+      audioRef.current.play().catch(() => setIsPlaying(false));
+      trackSongPlay(currentTrack.title, currentTrack.artist);
+    }
+  }, [currentTrackIndex]); 
+
+  // 2. Handle play/pause toggle (only when isPlaying changes)
+  useEffect(() => {
+    if (!audioRef.current) return;
     
     if (isPlaying) {
-      audioRef.current.play().catch(() => setIsPlaying(false))
-      // Notify Khalid (with 5-min throttle handled in the hook)
-      trackSongPlay(currentTrack.title, currentTrack.artist)
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error("Playback failed:", error);
+          setIsPlaying(false);
+        });
+      }
+    } else {
+      audioRef.current.pause();
     }
-  }, [isPlaying, currentTrackIndex, trackSongPlay, currentTrack.title, currentTrack.artist])
+  }, [isPlaying]);
 
   const togglePlay = (e) => {
     if (e) e.stopPropagation()
@@ -131,6 +145,11 @@ export default function FloatingMusicPlayer() {
           if (e.target.currentTime >= e.target.duration - 0.5) return;
           setIsPlaying(false)
         }}
+        onError={(e) => {
+          console.error("Audio Load Error:", e);
+          setIsLoading(false);
+          setIsPlaying(false);
+        }}
         preload="auto"
       />
 
@@ -180,7 +199,10 @@ export default function FloatingMusicPlayer() {
             initial={{ y: 30, opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
             animate={{ y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' }}
             exit={{ y: 30, opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
-            transition={{ type: 'spring', damping: 20, stiffness: 150 }}
+            transition={{ 
+              type: 'spring', damping: 20, stiffness: 150,
+              filter: { type: 'tween', duration: 0.3, ease: 'easeOut' } // Prevent negative blur overshoot
+            }}
             style={S.expandedPlayer}
           >
             {/* Header */}
