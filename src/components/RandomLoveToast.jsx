@@ -8,23 +8,26 @@ export default function RandomLoveToast() {
   const timeoutRef = useRef(null)
   
   useEffect(() => {
-    // 1. Show the first message right after load (2 seconds delay)
+    // 1. Show the first message after a good delay (e.g., 10 minutes) so it's a surprise
     const initialDelay = setTimeout(() => {
       showRandomMessage()
-    }, 2000);
+    }, 10 * 60 * 1000);
     
-    // 2. Start the interval loop (Randomized between 1 to 3 minutes)
+    // 2. Start the interval loop (Randomized between 15 to 30 minutes)
     let loopTimeoutId;
-    const loop = () => {
-       const nextInterval = 3 * 60 * 1000; // Exactly 3 minutes
+    const scheduleNext = () => {
+       // Random interval between 15 and 30 minutes
+       const min = 15 * 60 * 1000;
+       const max = 30 * 60 * 1000;
+       const nextInterval = Math.floor(Math.random() * (max - min + 1) + min);
        
        loopTimeoutId = setTimeout(() => {
           showRandomMessage();
-          loop(); // Schedule the next one recursively
+          scheduleNext(); // Schedule the next one recursively
        }, nextInterval);
     };
 
-    loop();
+    scheduleNext();
 
     return () => {
       clearTimeout(initialDelay);

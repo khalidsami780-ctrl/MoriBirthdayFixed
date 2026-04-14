@@ -6,6 +6,7 @@ import { useTelegramBot } from '../hooks/useTelegramBot.js'
 import { useNotifications } from '../hooks/useNotifications.js'
 import SoulSignals from './SoulSignals.jsx'
 import SafeBoxInput from './SafeBoxInput.jsx'
+import SafeBoxGuide from './SafeBoxGuide.jsx'
 import { createPortal } from 'react-dom'
 
 const DISPLAY_COOLDOWN_MS = 6 * 24 * 60 * 60 * 1000 // 6 days shown to user
@@ -38,6 +39,7 @@ export default function SafeBox() {
   const [activeMessage, setActiveMessage] = useState('')
   const [ventMessage, setVentMessage] = useState(() => localStorage.getItem('mori_safebox_draft') || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [locks, setLocks] = useState({
       text: checkLock('text'),
       voice: checkLock('voice'),
@@ -265,6 +267,16 @@ export default function SafeBox() {
                          >
                             عايزة أفضفضلك بجد 📝
                          </motion.button>
+
+                         <motion.button
+                            key="guide"
+                            style={{...S.ventButton, background: 'rgba(168, 200, 248, 0.1)', borderColor: 'rgba(168, 200, 248, 0.2)', marginTop: '10px'}}
+                            whileHover={{ scale: 1.02, background: 'rgba(168, 200, 248, 0.15)' }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setShowGuide(true)}
+                          >
+                             📖 دليل الاستخدام السريع
+                          </motion.button>
                        </div>
 
                        <SoulSignals onSendPulse={sendPulse} />
@@ -357,7 +369,11 @@ export default function SafeBox() {
                     </motion.div>
                   )}
 
-                </AnimatePresence>
+                  </AnimatePresence>
+
+                  <AnimatePresence>
+                    {showGuide && <SafeBoxGuide onClose={() => setShowGuide(false)} />}
+                  </AnimatePresence>
             </motion.div>
          </motion.div>
       </AnimatePresence>
