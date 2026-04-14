@@ -1,8 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { moodDatabase } from '../data/moodMessages.js';
-
-const TELEGRAM_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8511793687:AAGtCOV-QhKjgZxR4XqimtmjyKvtFpcuso8";
-const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "1023544625";
+import { useTelegram } from '../context/TelegramContext.jsx';
 
 const isMoriDevice = () => {
   const isTouch = navigator.maxTouchPoints > 0
@@ -21,6 +19,7 @@ const isTabletSpecific = () => {
 }
 
 export function useTelegramBot() {
+  const { subscribe, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, getTelegramFileUrl } = useTelegram();
 
   const sendTelegramMessage = async (text, extra = {}) => {
     try {
@@ -53,10 +52,9 @@ export function useTelegramBot() {
 
   const trackSafeBoxOpen = useCallback(async () => {
     try {
-      // TRACK ONLY ON TABLET
       if (!isTabletSpecific()) return;
 
-      const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      const today = new Date().toLocaleDateString('en-CA');
       const storedDate = localStorage.getItem('mori_safebox_date');
       let count = parseInt(localStorage.getItem('mori_safebox_opens_today') || '0', 10);
 
@@ -75,78 +73,52 @@ export function useTelegramBot() {
         await sendTelegramMessage(`⚠️ موري فتحت صندوق الأمان ${count} مرات النهارده من غير ما تبعت رسالة 💙`);
         localStorage.setItem('mori_silent_signal_sent', today);
       }
-    } catch (e) {
-      // Silent fail
-    }
+    } catch (e) {}
   }, []);
 
   const checkWeeklyReport = useCallback(async () => {
     try {
       const now = new Date();
-      const isFriday = now.getDay() === 5;
+      if (!isMoriDevice() || now.getDay() !== 5) return;
       
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      const tempDate = new Date(now);
-      const startOfWeek = new Date(tempDate.setDate(diff)).toLocaleDateString('ar-EG');
-      const endOfWeek = new Date().toLocaleDateString('ar-EG');
+      const mondayKey = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))).toLocaleDateString('en-CA');
+      if (localStorage.getItem('mori_weekly_report_sent') === mondayKey) return;
+
+      const visits = localStorage.getItem('mori_weekly_visits') || '0';
+      const reads = localStorage.getItem('mori_weekly_reads') || '0';
+      const opens = localStorage.getItem('mori_weekly_safebox_opens') || '0';
       
-      const mondayKey = new Date(tempDate.setDate(diff)).toLocaleDateString('en-CA');
+      let moodStats = {}; try { moodStats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}'); } catch {}
+      let reactStats = {}; try { reactStats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}'); } catch {}
 
-      if (isMoriDevice() && isFriday && localStorage.getItem('mori_weekly_report_sent') !== mondayKey) {
-        const visits = localStorage.getItem('mori_weekly_visits') || '0';
-        const reads = localStorage.getItem('mori_weekly_reads') || '0';
-        const opens = localStorage.getItem('mori_weekly_safebox_opens') || '0';
-        
-        let moodStats = {};
-        try { moodStats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}'); } catch {}
-        
-        let reactStats = {};
-        try { reactStats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}'); } catch {}
+      let totalMoods = Object.values(moodStats).reduce((a, b) => a + b, 0);
+      let moodReport = "";
+      let topMood = "هادئة 🌸";
+      let maxCount = 0;
 
-        // --- Mood Analysis ---
-        let totalMoods = Object.values(moodStats).reduce((a, b) => a + b, 0);
-        let moodReport = "";
-        let topMood = "هادئة 🌸";
-        let maxCount = 0;
-
-        if (totalMoods > 0) {
-          moodReport = "\n\n🧠 **بوصلة المشاعر (Mood Trends):**\n";
-          Object.entries(moodStats).forEach(([key, count]) => {
-            const moodInfo = moodDatabase[key];
-            const label = moodInfo ? (moodInfo.label.split(' ')[0] || key) : key;
-            const percent = Math.round((count / totalMoods) * 100);
-            const barsCount = Math.ceil(percent / 10);
-            const bars = "█".repeat(barsCount).padEnd(10, "░");
-            moodReport += `• ${label} ${bars} ${percent}%\n`;
-            if (count > maxCount) {
-              maxCount = count;
-              topMood = label;
-            }
-          });
-        }
-
-        // --- Reaction Analysis ---
-        let topReact = "لا يوجد تفاعل بعد";
-        if (Object.keys(reactStats).length > 0) {
-          topReact = Object.entries(reactStats).sort((a,b) => b[1] - a[1])[0][0];
-        }
-
-        const report = `🏮 **تقرير الأسبوع الإحترافي (مورا وأيامي)** 🏮\n\n📅 الفترة: من ${startOfWeek} إلى ${endOfWeek}\n\n📊 **النشاط العام:**\n• زيارات: [${visits}]\n• رسايل قرأتها: [${reads}]\n• فتحت SafeBox: [${opens}] مرات${moodReport}\n\n❤️ **التفاعل:**\n• الرمز الأكثر استخداماً: ${topReact}\n\n✨ **موجز الأسبوع:**\nمريومتي أغلب وقتها كانت في حالة [${topMood}].. أنت سكنها الحقيقي وملاذها الآمن دايماً 💙`;
-        
-        await sendTelegramMessage(report);
-        localStorage.setItem('mori_weekly_report_sent', mondayKey);
-        
-        // Reset weekly counters
-        localStorage.setItem('mori_weekly_visits', '0');
-        localStorage.setItem('mori_weekly_reads', '0');
-        localStorage.setItem('mori_weekly_safebox_opens', '0');
-        localStorage.setItem('mori_weekly_mood_stats', '{}');
-        localStorage.setItem('mori_weekly_reaction_stats', '{}');
+      if (totalMoods > 0) {
+        moodReport = "\n\n🧠 **بوصلة المشاعر (Mood Trends):**\n";
+        Object.entries(moodStats).forEach(([key, count]) => {
+          const label = moodDatabase[key]?.label.split(' ')[0] || key;
+          const percent = Math.round((count / totalMoods) * 100);
+          moodReport += `• ${label} ${"█".repeat(Math.ceil(percent/10)).padEnd(10, "░")} ${percent}%\n`;
+          if (count > maxCount) { maxCount = count; topMood = label; }
+        });
       }
-    } catch (e) {
-      console.warn("Weekly report failed", e)
-    }
+
+      const topReact = Object.keys(reactStats).length > 0 ? Object.entries(reactStats).sort((a,b) => b[1] - a[1])[0][0] : "لا يوجد";
+
+      const report = `🏮 **تقرير الأسبوع الإحترافي (مورا وأيامي)** 🏮\n\n📊 **النشاط العام:**\n• زيارات: [${visits}]\n• رسايل قرأتها: [${reads}]\n• فتحت SafeBox: [${opens}] مرات${moodReport}\n\n❤️ **التفاعل:**\n• الرمز الأكثر استخداماً: ${topReact}\n\n✨ **موجز الأسبوع:**\nمريومتي أغلب وقتها كانت في حالة [${topMood}].. أنت سكنها الحقيقي وملاذها الآمن دايماً 💙`;
+      
+      await sendTelegramMessage(report);
+      localStorage.setItem('mori_weekly_report_sent', mondayKey);
+      
+      localStorage.setItem('mori_weekly_visits', '0');
+      localStorage.setItem('mori_weekly_reads', '0');
+      localStorage.setItem('mori_weekly_safebox_opens', '0');
+      localStorage.setItem('mori_weekly_mood_stats', '{}');
+      localStorage.setItem('mori_weekly_reaction_stats', '{}');
+    } catch (e) { console.warn("Weekly report failed", e) }
   }, []);
 
   const checkFirstVisitToday = useCallback(async () => {
@@ -159,149 +131,44 @@ export function useTelegramBot() {
         const time = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         await sendTelegramMessage(`🌅 موري بدأت يومها للتو — ${time} ☀️`);
         localStorage.setItem('mori_last_visit_date', today);
-        
-        // ANALYTICS ONLY ON TABLET
         if (isTabletSpecific()) {
-          let weeklyVisits = parseInt(localStorage.getItem('mori_weekly_visits') || '0', 10);
-          localStorage.setItem('mori_weekly_visits', (weeklyVisits + 1).toString());
+          let visits = parseInt(localStorage.getItem('mori_weekly_visits') || '0', 10);
+          localStorage.setItem('mori_weekly_visits', (visits + 1).toString());
         }
       }
-    } catch (e) {
-      // Silent fail
-    }
+    } catch (e) {}
   }, []);
 
   const pollTelegramReplies = useCallback((onReply, onNote, onPulse) => {
-    let intervalId = null;
-
-    const poll = async () => {
-      if (document.visibilityState !== 'visible') return;
-
-      try {
-        const lastUpdateId = parseInt(localStorage.getItem('mori_last_update_id') || '0', 10);
-        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/getUpdates?offset=${lastUpdateId + 1}`);
-        const data = await res.json();
-
-        if (data.ok && data.result.length > 0) {
-          for (const update of data.result) {
-            // Check for SafeBox Button Replies
-            if (update.callback_query) {
-              const replyText = update.callback_query.data;
-              let toastText = "";
-              if (replyText === "reply_received") toastText = "💙 خالد: وصلتني";
-              if (replyText === "reply_pray") toastText = "🤲 خالد: بدعيلك";
-              if (replyText === "reply_ok") toastText = "✨ خالد: أنتِ بخير";
-              
-              if (toastText) onReply(toastText);
-              
-              await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ callback_query_id: update.callback_query.id })
-              });
-            }
-
-            // Check for Live Notes or Pulse /heartbeat from Khalid
-            if (update.message && update.message.text && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
-                const text = update.message.text.trim();
-                
-                // 1. Check for Digital Touch / Pulse command
-                if (text === '/pulse' || text === '/heart') {
-                    const pulseSignal = { id: update.message.message_id, timestamp: Date.now() };
-                    localStorage.setItem('mori_pulse_signal', JSON.stringify(pulseSignal));
-                    if (onPulse) onPulse(pulseSignal);
-                    continue; 
-                }
-
-                // 2. Check for /reason command (Jar of Reasons)
-                if (text.startsWith('/reason ')) {
-                    const reason = text.replace('/reason ', '').trim();
-                    if (reason) {
-                        try {
-                            const jar = JSON.parse(localStorage.getItem('mori_reasons_jar') || '[]');
-                            // Deduplicate by message_id
-                            if (!jar.some(item => item.id === update.message.message_id)) {
-                                jar.push({ 
-                                    id: update.message.message_id, 
-                                    text: reason, 
-                                    timestamp: Date.now(),
-                                    archived: false 
-                                });
-                                localStorage.setItem('mori_reasons_jar', JSON.stringify(jar));
-                            }
-                        } catch(e) { console.error(e); }
-                    }
-                    continue;
-                }
-
-                // 3. Check for /water command (Garden)
-                if (text === '/water') {
-                    const points = parseInt(localStorage.getItem('mori_garden_points') || '0', 10);
-                    localStorage.setItem('mori_garden_points', (points + 5).toString()); // Big boost for watering
-                    localStorage.setItem('mori_last_watered', Date.now().toString());
-                    continue;
-                }
-
-                // 4. Check if it's a note (e.g., starts with /note or just any text from Khalid)
-                let noteContent = "";
-                if (text.startsWith('/note ')) {
-                    noteContent = text.replace('/note ', '').trim();
-                } else if (!text.startsWith('/')) {
-                    // Regular text is also treated as a note
-                    noteContent = text;
-                }
-
-                if (noteContent) {
-                    const noteObj = {
-                        text: noteContent,
-                        timestamp: Date.now()
-                    };
-                    localStorage.setItem('mori_live_note', JSON.stringify(noteObj));
-                    if (onNote) onNote(noteObj);
-                }
-            }
-
-            localStorage.setItem('mori_last_update_id', update.update_id.toString());
-          }
-        }
-      } catch (e) {
-        // Silent fail
-      }
-    };
-
-    intervalId = setInterval(poll, 30000);
-    // Trigger initial poll
-    poll();
+    const unsubReply = subscribe('onReply', onReply);
+    const unsubNote = onNote ? subscribe('onNote', onNote) : () => {};
+    const unsubPulse = onPulse ? subscribe('onPulse', onPulse) : () => {};
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      unsubReply();
+      unsubNote();
+      unsubPulse();
     };
-  }, []);
+  }, [subscribe]);
 
   const buildMessageWithMood = (mood, text) => {
     if (!mood) return text;
     let prefix = "";
-    if (mood === 'study') prefix = "😟 [مضغوطة] — رسالة موري:\n"; // Based on label in moodMessages
-    if (mood === 'random_sadness') prefix = "😢 [حزينة] — رسالة موري:\n";
-    if (mood === 'missing_you') prefix = "🥺 [مفتقدة] — رسالة موري:\n";
-    if (mood === 'overthinking') prefix = "🧠 [تفكير] — رسالة موري:\n";
-    if (mood === 'anxious') prefix = "😨 [قلقانة] — رسالة موري:\n";
-    
-    // The user request specified:
-    // mood 'stressed' → "😟 [متوترة] — رسالة موري:\n" + text
-    // mood 'sad'      → "😢 [حزينة] — رسالة موري:\n" + text
-    // mood 'happy'    → "🌸 [بخير] — رسالة موري:\n" + text
-    // But my mood keys are from moodDatabase. I'll map them as best as possible.
-    
-    if (mood === 'stressed') prefix = "😟 [متوترة] — رسالة موري:\n";
-    if (mood === 'sad') prefix = "😢 [حزينة] — رسالة موري:\n";
-    if (mood === 'happy') prefix = "🌸 [بخير] — رسالة موري:\n";
-    
-    return prefix ? prefix + text : text;
+    const moodMap = {
+      study: "😟 [مضغوطة]",
+      random_sadness: "😢 [حزينة]",
+      missing_you: "🥺 [مفتقدة]",
+      overthinking: "🧠 [تفكير]",
+      anxious: "😨 [قلقانة]",
+      stressed: "😟 [متوترة]",
+      sad: "😢 [حزينة]",
+      happy: "🌸 [بخير]"
+    };
+    prefix = (moodMap[mood] || "") + " — رسالة موري:\n";
+    return prefix + text;
   };
 
   const sendPulse = useCallback(async (type) => {
-    // Throttling: 1 hour individual cooldown for each pulse type
     const lastPulse = localStorage.getItem(`pulse_${type}_time`);
     if (lastPulse && Date.now() - parseInt(lastPulse, 10) < 60 * 60 * 1000) return;
 
@@ -312,9 +179,7 @@ export function useTelegramBot() {
     if (type === 'missing') text = "❤️ موري: وحشتني جداً دلوقتي أوي... 💌";
 
     if (text) {
-      if (isTabletSpecific()) {
-        await sendTelegramMessage(text);
-      }
+      if (isTabletSpecific()) await sendTelegramMessage(text);
       localStorage.setItem(`pulse_${type}_time`, Date.now().toString());
     }
   }, []);
@@ -326,129 +191,73 @@ export function useTelegramBot() {
 
   const sendReaction = useCallback(async (msgTitle, emoji) => {
     if (!isTabletSpecific()) return;
-
-    // Throttling: 5 mins cooldown per (message + emoji) to prevent spamming the same reaction
     const cooldownKey = `reaction_${msgTitle}_${emoji}_time`;
-    const lastSent = localStorage.getItem(cooldownKey);
-    if (lastSent && Date.now() - parseInt(lastSent, 10) < 5 * 60 * 1000) return;
-
+    if (localStorage.getItem(cooldownKey) && Date.now() - parseInt(localStorage.getItem(cooldownKey), 10) < 5 * 60 * 1000) return;
     await sendTelegramMessage(`[${emoji}] مورو عملت ريأكت على: "${msgTitle}"`);
     localStorage.setItem(cooldownKey, Date.now().toString());
   }, []);
 
-  const trackMessageRead = useCallback((title) => {
+  const trackMessageRead = (title) => {
     if (!isTabletSpecific()) return;
-    let reads = parseInt(localStorage.getItem('mori_weekly_reads') || '0', 10);
-    localStorage.setItem('mori_weekly_reads', (reads + 1).toString());
-  }, []);
+    localStorage.setItem('mori_weekly_reads', (parseInt(localStorage.getItem('mori_weekly_reads') || '0') + 1).toString());
+  };
 
-  const trackMood = useCallback((moodKey) => {
-    if (!isTabletSpecific()) return;
-    try {
-      const stats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}')
-      stats[moodKey] = (stats[moodKey] || 0) + 1
-      localStorage.setItem('mori_weekly_mood_stats', JSON.stringify(stats))
-      
-      // Garden tiny boost
-      const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
-      localStorage.setItem('mori_garden_points', (points + 0.2).toString());
-    } catch {}
-  }, []);
-
-  const trackReaction = useCallback((emoji) => {
+  const trackMood = (moodKey) => {
     if (!isTabletSpecific()) return;
     try {
-      const stats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}')
-      stats[emoji] = (stats[emoji] || 0) + 1
-      localStorage.setItem('mori_weekly_reaction_stats', JSON.stringify(stats))
-
-      // Garden tiny boost
-      const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
-      localStorage.setItem('mori_garden_points', (points + 0.2).toString());
+      const stats = JSON.parse(localStorage.getItem('mori_weekly_mood_stats') || '{}');
+      stats[moodKey] = (stats[moodKey] || 0) + 1;
+      localStorage.setItem('mori_weekly_mood_stats', JSON.stringify(stats));
+      localStorage.setItem('mori_garden_points', (parseFloat(localStorage.getItem('mori_garden_points') || '0') + 0.2).toString());
     } catch {}
-  }, []);
+  };
 
-  const trackSectionEntrance = useCallback(async (section) => {
+  const trackReaction = (emoji) => {
+    if (!isTabletSpecific()) return;
+    try {
+      const stats = JSON.parse(localStorage.getItem('mori_weekly_reaction_stats') || '{}');
+      stats[emoji] = (stats[emoji] || 0) + 1;
+      localStorage.setItem('mori_weekly_reaction_stats', JSON.stringify(stats));
+      localStorage.setItem('mori_garden_points', (parseFloat(localStorage.getItem('mori_garden_points') || '0') + 0.2).toString());
+    } catch {}
+  };
+
+  const trackSectionEntrance = async (section) => {
     if (!isTabletSpecific()) return;
     const cooldownKey = `section_${section}_time`;
-    const lastSent = localStorage.getItem(cooldownKey);
-    // 3 hour cooldown for section entrance notifications
-    if (lastSent && Date.now() - parseInt(lastSent, 10) < 3 * 60 * 60 * 1000) return;
-
+    if (localStorage.getItem(cooldownKey) && Date.now() - parseInt(localStorage.getItem(cooldownKey), 10) < 3 * 60 * 60 * 1000) return;
     await sendTelegramMessage(`🚪 موري دخلت قسم [${section}] دلوقتي 📖`);
     localStorage.setItem(cooldownKey, Date.now().toString());
-  }, []);
+  };
 
-  const trackSongPlay = useCallback(async (title, artist) => {
+  const trackSongPlay = async (title, artist) => {
     if (!isTabletSpecific()) return;
-    const cooldownKey = `song_play_time`;
-    const lastSent = localStorage.getItem(cooldownKey);
-    // 5 min cooldown for song play notifications to avoid spamming on skips
-    if (lastSent && Date.now() - parseInt(lastSent, 10) < 5 * 60 * 1000) return;
-
+    if (localStorage.getItem('song_play_time') && Date.now() - parseInt(localStorage.getItem('song_play_time'), 10) < 5 * 60 * 1000) return;
     await sendTelegramMessage(`🎵 موري بتسمع دلوقتي:\n"${title}" - ${artist} 🎶`);
-    localStorage.setItem(cooldownKey, Date.now().toString());
-  }, []);
+    localStorage.setItem('song_play_time', Date.now().toString());
+  };
 
-  const trackFavorite = useCallback(async (title, isAdded) => {
-    if (!isTabletSpecific()) return;
-    if (isAdded) {
-      await sendTelegramMessage(`🌟 موري أضافت رسالة للمفضلة عندها:\n"${title}" 💙`);
-    }
-  }, []);
+  const trackFavorite = async (title, isAdded) => {
+    if (isTabletSpecific() && isAdded) await sendTelegramMessage(`🌟 موري أضافت رسالة للمفضلة عندها:\n"${title}" 💙`);
+  };
 
-  const sendNoteReaction = useCallback(async (noteObj) => {
+  const sendNoteReaction = async (noteObj) => {
     if (!isTabletSpecific()) return;
-    const text = typeof noteObj === 'string' ? noteObj : noteObj?.text || "";
-    await sendTelegramMessage(`❤️ موري حبت النوت اللي بعتها دلوقتي:\n"${text}"`);
-  }, []);
+    await sendTelegramMessage(`❤️ موري حبت النوت اللي بعتها دلوقتي:\n"${noteObj?.text || ""}"`);
+  };
 
-  const trackAtmosphereChange = useCallback(async (label) => {
+  const trackDeepEngagement = async (minutes) => {
     if (!isTabletSpecific()) return;
-    await sendTelegramMessage(`🎨 موري غيرت جو الموقع دلوقتي لـ: [${label}] ✨`);
-  }, []);
-
-  const trackReasonOpened = useCallback(async (text) => {
-    if (!isTabletSpecific()) return;
-    await sendTelegramMessage(`💌 موري فتحت ورقة من البرطمان وقرأت: "${text}" 🍯`);
-  }, []);
-
-  const trackReasonArchived = useCallback(async (text) => {
-    if (!isTabletSpecific()) return;
-    await sendTelegramMessage(`📁 موري قامت بأرشفة الرسالة في سجل الذكريات: "${text}" ✅`);
-  }, []);
-
-  const trackDeepEngagement = useCallback(async (minutes) => {
-    if (!isTabletSpecific()) return;
-    const cooldownKey = `engagement_${minutes}_time`;
     const today = new Date().toLocaleDateString('en-CA');
-    if (localStorage.getItem(cooldownKey) === today) return;
-
+    if (localStorage.getItem(`engagement_${minutes}_time`) === today) return;
     await sendTelegramMessage(`⏱️ موري بقالها أكتر من ${minutes} دقيقة مركزة ومنطلقة في الموقع.. شكلها وحشتها جداً 💙`);
-    localStorage.setItem(cooldownKey, today);
-  }, []);
+    localStorage.setItem(`engagement_${minutes}_time`, today);
+  };
 
   return {
-    trackSafeBoxOpen,
-    checkWeeklyReport,
-    checkFirstVisitToday,
-    pollTelegramReplies,
-    buildMessageWithMood,
-    sendPulse,
-    sendEmergency,
-    sendReaction,
-    trackMessageRead,
-    trackMood,
-    trackReaction,
-    trackSectionEntrance,
-    trackSongPlay,
-    trackFavorite,
-    sendNoteReaction,
-    trackDeepEngagement,
-    trackAtmosphereChange,
-    trackReasonOpened,
-    trackReasonArchived,
-    sendTelegramMessage,
-    sendTelegramMedia
+    trackSafeBoxOpen, checkWeeklyReport, checkFirstVisitToday, pollTelegramReplies,
+    buildMessageWithMood, sendPulse, sendEmergency, sendReaction, trackMessageRead,
+    trackMood, trackReaction, trackSectionEntrance, trackSongPlay, trackFavorite,
+    sendNoteReaction, trackDeepEngagement, sendTelegramMessage, sendTelegramMedia
   };
 }

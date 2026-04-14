@@ -13,6 +13,8 @@ export default function LiveNote() {
   const [hasReacted, setHasReacted] = useState(false)
   const { pollTelegramReplies, sendNoteReaction } = useTelegramBot()
 
+  const isMedia = note && (note.type === 'image' || note.type === 'video' || note.type === 'video_note');
+
   useEffect(() => {
     const stored = localStorage.getItem('mori_live_note')
     if (stored) {
@@ -97,7 +99,46 @@ export default function LiveNote() {
             </div>
             
             <div style={S.content}>
-               <p style={S.text}>{note.text || note}</p>
+               {note.type === 'image' && (
+                 <div style={S.mediaWrapper}>
+                    <motion.img 
+                      src={note.url} 
+                      alt="Live Photo" 
+                      style={S.mediaImage}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                    />
+                 </div>
+               )}
+               
+               {note.type === 'video' && (
+                 <div style={S.mediaWrapper}>
+                   <motion.video
+                     src={note.url}
+                     controls
+                     autoPlay
+                     muted
+                     loop
+                     playsInline
+                     style={S.mediaVideo}
+                   />
+                 </div>
+               )}
+
+               {note.type === 'video_note' && (
+                 <div style={S.videoNoteContainer}>
+                    <motion.video
+                      src={note.url}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={S.mediaVideoNote}
+                    />
+                 </div>
+               )}
+
+               <p style={{...S.text, marginTop: isMedia ? '12px' : '0'}}>{note.text || (typeof note === 'string' ? note : "")}</p>
             </div>
 
             <div style={S.footer}>
@@ -227,5 +268,44 @@ const S = {
     color: 'rgba(255,255,255,0.15)',
     textTransform: 'uppercase',
     letterSpacing: '1px'
+  },
+  mediaWrapper: {
+    width: '100%',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    position: 'relative',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
+    border: '1px solid rgba(168, 200, 248, 0.2)',
+    marginBottom: '8px'
+  },
+  mediaImage: {
+    width: '100%',
+    height: 'auto',
+    maxHeight: '280px',
+    minHeight: '160px',
+    display: 'block',
+    objectFit: 'cover',
+    transition: 'transform 0.5s ease'
+  },
+  mediaVideo: {
+    width: '100%',
+    maxHeight: '280px',
+    minHeight: '160px',
+    display: 'block',
+    objectFit: 'cover'
+  },
+  videoNoteContainer: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '10px 0'
+  },
+  mediaVideoNote: {
+    width: '180px',
+    height: '180px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '3px solid rgba(168, 200, 248, 0.4)',
+    boxShadow: '0 0 20px rgba(168, 200, 248, 0.3)'
   }
 }

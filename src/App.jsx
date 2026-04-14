@@ -94,51 +94,51 @@ export default function App() {
 
   return (
     <Suspense fallback={<PageLoader />}>
-      <div style={{ 
-        position: 'relative', 
-        minHeight: '100vh', 
-        transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        ...themeStyles
-      }}>
-        {/* Atmosphere Overlay Layer */}
-        <div style={{
-           position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 5,
-           background: 'radial-gradient(circle at 50% 50%, var(--atmosphere-glow), transparent 70%)',
-           filter: 'var(--atmosphere-filter)',
-           transition: 'all 1.5s ease'
-        }} />
+        <div style={{ 
+          position: 'relative', 
+          minHeight: '100vh', 
+          transition: 'all 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          ...themeStyles
+        }}>
+          {/* Atmosphere Overlay Layer */}
+          <div style={{
+             position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 5,
+             background: 'radial-gradient(circle at 50% 50%, var(--atmosphere-glow), transparent 70%)',
+             filter: 'var(--atmosphere-filter)',
+             transition: 'all 1.5s ease'
+          }} />
 
-        {/* 2. Routes Layer - Safebox portal inside here will stack ON TOP of Navbar */}
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/"          element={<Navigate to="/birthday" replace />} />
-            <Route path="/birthday"  element={<BirthdayPage />} />
-            <Route path="/eid"       element={<EidPage />} />
-            <Route path="/messages"  element={<MessagesPage />} />
-            <Route path="/unity"     element={<UnityHub />} />
-            <Route path="/safebox"   element={<SafeBox />} />
-            <Route path="*"          element={<Navigate to="/birthday" replace />} />
-          </Routes>
-        </AnimatePresence>
+          {/* 2. Routes Layer - Safebox portal inside here will stack ON TOP of Navbar */}
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/"          element={<Navigate to="/birthday" replace />} />
+              <Route path="/birthday"  element={<BirthdayPage />} />
+              <Route path="/eid"       element={<EidPage />} />
+              <Route path="/messages"  element={<MessagesPage />} />
+              <Route path="/unity"     element={<UnityHub />} />
+              <Route path="/safebox"   element={<SafeBox />} />
+              <Route path="*"          element={<Navigate to="/birthday" replace />} />
+            </Routes>
+          </AnimatePresence>
 
-        {/* 1. Base UI Layer (Portalled) */}
-        <Navbar />
+          {/* 1. Base UI Layer (Portalled) */}
+          <Navbar />
 
-        {/* 3. Utility & Global Layer (rendered last = highest top) */}
-        {showEnhancements && (
-          <Suspense fallback={null}>
-            <FloatingMusicPlayer />
-            <RandomLoveToast />
-            <UpdateNotification />
-            <NotificationBell />
-            <GlobalToast />
-            <LiveNote />
-            <PulseOverlay />
-            <GlobalAtmosphere />
-            <AtmosphereController />
-          </Suspense>
-        )}
-      </div>
-    </Suspense>
+          {/* 3. Utility & Global Layer (rendered last = highest top) */}
+          {showEnhancements && (
+            <Suspense fallback={null}>
+              <FloatingMusicPlayer />
+              <RandomLoveToast />
+              <UpdateNotification />
+              <NotificationBell />
+              <GlobalToast />
+              <LiveNote />
+              <PulseOverlay />
+              <GlobalAtmosphere />
+              <AtmosphereController />
+            </Suspense>
+          )}
+        </div>
+      </Suspense>
   )
 }

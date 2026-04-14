@@ -642,14 +642,24 @@ const TN = {
 function MessagesSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+
+  // Load Remote Messages from localStorage
+  const remoteMessages = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mori_remote_messages') || '[]')
+    } catch { return [] }
+  }, [])
+
+  const allMessages = useMemo(() => [...messagePosts, ...remoteMessages], [remoteMessages])
+
   const pinnedPosts = useMemo(() => (
     PINNED_MESSAGE_IDS
-      .map(id => messagePosts.find(post => post.id === id))
+      .map(id => allMessages.find(post => post.id === id))
       .filter(Boolean)
-  ), [])
+  ), [allMessages])
   const pinnedIds = useMemo(() => new Set(PINNED_MESSAGE_IDS), [])
 
-  const filtered = useMemo(() => messagePosts.filter(post => {
+  const filtered = useMemo(() => allMessages.filter(post => {
     if (pinnedIds.has(post.id)) return false
     const matchesSearch = normalizedSearchTerm === '' ||
                          post.title.toLowerCase().includes(normalizedSearchTerm) ||
@@ -658,7 +668,7 @@ function MessagesSection({ searchTerm, dateFilter }) {
     const matchesYear = dateFilter.year === 'all' || date.getFullYear().toString() === dateFilter.year
     const matchesMonth = dateFilter.month === 'all' || date.getMonth().toString() === dateFilter.month
     return matchesSearch && matchesYear && matchesMonth
-  }), [dateFilter.month, dateFilter.year, normalizedSearchTerm, pinnedIds])
+  }), [allMessages, dateFilter.month, dateFilter.year, normalizedSearchTerm, pinnedIds])
 
   const sorted = useMemo(() => [...filtered].sort((a, b) => b.createdAt - a.createdAt), [filtered])
   const visible = sorted.slice(0, visibleCount)
@@ -731,7 +741,17 @@ function MessagesSection({ searchTerm, dateFilter }) {
 function AdviceSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
-  const filtered = useMemo(() => advicePosts.filter(post => {
+
+  // Load Remote Tips from localStorage
+  const remoteTips = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mori_remote_tips') || '[]')
+    } catch { return [] }
+  }, [])
+
+  const allTips = useMemo(() => [...advicePosts, ...remoteTips], [remoteTips])
+
+  const filtered = useMemo(() => allTips.filter(post => {
     const matchesSearch = normalizedSearchTerm === '' ||
                          post.title.toLowerCase().includes(normalizedSearchTerm) ||
                          post.text.toLowerCase().includes(normalizedSearchTerm)
@@ -739,7 +759,7 @@ function AdviceSection({ searchTerm, dateFilter }) {
     const matchesYear = dateFilter.year === 'all' || date.getFullYear().toString() === dateFilter.year
     const matchesMonth = dateFilter.month === 'all' || date.getMonth().toString() === dateFilter.month
     return matchesSearch && matchesYear && matchesMonth
-  }), [dateFilter.month, dateFilter.year, normalizedSearchTerm])
+  }), [allTips, dateFilter.month, dateFilter.year, normalizedSearchTerm])
 
   const sorted = useMemo(() => [...filtered].sort((a, b) => b.createdAt - a.createdAt), [filtered])
   const visible = sorted.slice(0, visibleCount)
