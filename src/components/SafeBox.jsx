@@ -7,7 +7,8 @@ import { useNotifications } from '../hooks/useNotifications.js'
 import SoulSignals from './SoulSignals.jsx'
 import { createPortal } from 'react-dom'
 
-const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000
+const DISPLAY_COOLDOWN_MS = 6 * 24 * 60 * 60 * 1000 // 6 days shown to user
+const ACTUAL_COOLDOWN_MS  = 3 * 24 * 60 * 60 * 1000 // 3 days actual secret limit
 
 function getCanVentFromStorage() {
   try {
@@ -15,14 +16,17 @@ function getCanVentFromStorage() {
     if (!lastVentStr) return true
     const lastVent = Number(lastVentStr)
     if (Number.isNaN(lastVent)) return true
-    return Date.now() - lastVent >= SIX_DAYS_MS
+    
+    // SECRET LOGIC: Allow venting after ACTUAL_COOLDOWN_MS (3 days)
+    return Date.now() - lastVent >= ACTUAL_COOLDOWN_MS
   } catch {
     return true
   }
 }
 
 function formatRemainingTime(lastVent) {
-  const diff = SIX_DAYS_MS - (Date.now() - lastVent);
+  // VISUAL LOGIC: Show countdown based on DISPLAY_COOLDOWN_MS (6 days)
+  const diff = DISPLAY_COOLDOWN_MS - (Date.now() - lastVent);
   if (diff <= 0) return null;
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -36,7 +40,7 @@ export default function SafeBox() {
   const navigate = useNavigate()
   const [stage, setStage] = useState('mood_selection') // 'mood_selection' | 'comfort_view' | 'smile' | 'venting'
   const [activeMessage, setActiveMessage] = useState('')
-  const [ventMessage, setVentMessage] = useState('')
+  const [ventMessage, setVentMessage] = useState(() => localStorage.getItem('mori_safebox_draft') || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [canVent, setCanVent] = useState(getCanVentFromStorage)
   const [selectedMood, setSelectedMood] = useState(null)
@@ -93,6 +97,13 @@ export default function SafeBox() {
     if (comfortTimeoutRef.current) clearTimeout(comfortTimeoutRef.current)
   }, [])
 
+  // DRAFT PERSISTENCE: Save draft on every change
+  useEffect(() => {
+    if (!isSubmitting) {
+      localStorage.setItem('mori_safebox_draft', ventMessage)
+    }
+  }, [ventMessage, isSubmitting])
+
   const handleVentingSubmit = async () => {
     if(!ventMessage.trim()) return;
     setIsSubmitting(true);
@@ -119,7 +130,11 @@ export default function SafeBox() {
         })
       });
       if (!res.ok) throw new Error("API error");
+      
+      // Success: Clear draft and update cooldown
+      localStorage.removeItem('mori_safebox_draft');
       localStorage.setItem('last_safebox_vent', Date.now().toString());
+      
       setCanVent(false)
       setShouldPoll(true)
       handleComfortedClick(); 
