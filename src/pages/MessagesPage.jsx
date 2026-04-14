@@ -197,7 +197,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
           ref={textRef}
           style={{ 
             ...MC.content, 
-            maxHeight: isExpanded ? '2000px' : '220px',
+            maxHeight: isExpanded ? `${textRef.current?.scrollHeight || 1000}px` : '220px',
             overflow: 'hidden',
             transition: 'max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
             maskImage: !isExpanded && needsReadMore 
