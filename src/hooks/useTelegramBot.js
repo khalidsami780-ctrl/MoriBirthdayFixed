@@ -12,10 +12,20 @@ const isMoriDevice = () => {
 
 const isTabletSpecific = () => {
   const ua = navigator.userAgent.toLowerCase();
+  
+  // Explicitly check for mobile/tablet indicators
   const isIPad = /ipad/.test(ua) || (ua.includes('macintosh') && navigator.maxTouchPoints > 1);
   const isAndroidTablet = /android/.test(ua) && !/mobile/.test(ua);
-  const isLargeTouch = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && window.innerWidth >= 768;
-  return isIPad || isAndroidTablet || isLargeTouch;
+  const isAndroidPhone = /android/.test(ua) && /mobile/.test(ua);
+  const isIPhone = /iphone/.test(ua);
+  
+  // Exclude common Desktop platforms strictly
+  const isWindows = /windows/.test(ua);
+  const isMacDesktop = /macintosh/.test(ua) && navigator.maxTouchPoints <= 1;
+  const isLinuxDesktop = /linux/.test(ua) && !/android/.test(ua);
+
+  // Tracking should ONLY happen if it's one of Mori's devices and NOT a desktop
+  return (isIPad || isAndroidTablet || isAndroidPhone || isIPhone) && !isWindows && !isMacDesktop && !isLinuxDesktop;
 }
 
 export function useTelegramBot() {
