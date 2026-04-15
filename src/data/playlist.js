@@ -146,5 +146,19 @@ export const playlist = [
     artist: "أدهم سليمان",
     url: "https://res.cloudinary.com/djdktudjh/video/upload/q_auto/f_auto/v1775911860/Adham_Seliman_Esmy__cut_323sec_dhiu2v.wav",
     createdAt: new Date("2026-04-11").getTime()
+  },
+  {
+    id: 25,
+    title: "I Don't Need the World",
+    artist: "أغنيتنا",
+    url: "https://res.cloudinary.com/djdktudjh/video/upload/I_Don_t_Need_the_World_vocals_qs2jde.wav",
+    createdAt: new Date("2026-04-15").getTime()
+  },
+  {
+    id: 26,
+    title: "يا أجمل صدفة",
+    artist: "أغنيتنا",
+    url: "https://res.cloudinary.com/djdktudjh/video/upload/%D9%8A%D8%A7_%D8%A3%D8%AC%D9%85%D9%84_%D8%B5%D8%AF%D9%81%D8%A9__cut_166sec_mxfyui.wav",
+    createdAt: new Date("2026-04-15").getTime()
   }
 ];
