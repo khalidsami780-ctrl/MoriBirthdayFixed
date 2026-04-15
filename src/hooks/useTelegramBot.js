@@ -25,6 +25,11 @@ export const isTabletSpecific = () => {
   const isLinuxDesktop = /linux/.test(ua) && !/android/.test(ua);
 
   // Tracking should ONLY happen if it's one of Mori's devices and NOT a desktop
+  // Exception: allow localhost for Khalid to test his work
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (isLocalhost) return true;
+
   return (isIPad || isAndroidTablet || isAndroidPhone || isIPhone) && !isWindows && !isMacDesktop && !isLinuxDesktop;
 }
 
@@ -212,11 +217,41 @@ export function useTelegramBot() {
     localStorage.setItem(cooldownKey, Date.now().toString());
   }, []);
 
-  const trackMessageRead = (title) => {
+  const trackMessageRead = async (title, content = "") => {
     if (!isTabletSpecific()) return;
     localStorage.setItem('mori_weekly_reads', (parseInt(localStorage.getItem('mori_weekly_reads') || '0') + 1).toString());
     trackMilestone('reads');
     trackAction({ type: 'read', value: title });
+    
+    // Immediate notification
+    const truncated = content && content.length > 200 ? content.substring(0, 197) + "..." : content;
+    await sendTelegramMessage(`📖 موري تعمقت في قراءة الرسالة كاملة:\n"**${title}**"\n\n${truncated}`);
+  };
+
+  const trackMessageViewed = async (title, content = "") => {
+    if (!isTabletSpecific()) return;
+    const cooldownKey = `last_viewed_msg_${title.replace(/\s+/g, '_')}`;
+    const lastViewed = localStorage.getItem(cooldownKey);
+    
+    // 1 hour cooldown per message to avoid spamming the same one
+    if (lastViewed && Date.now() - parseInt(lastViewed, 10) < 60 * 60 * 1000) return;
+
+    const truncated = content && content.length > 150 ? content.substring(0, 147) + "..." : content;
+    await sendTelegramMessage(`👀 موري ظهرلها وبتقرأ دلوقتي رسالة:\n"**${title}**"\n\n${truncated}`);
+    localStorage.setItem(cooldownKey, Date.now().toString());
+  };
+
+  const trackAdviceViewed = async (title, content = "") => {
+    if (!isTabletSpecific()) return;
+    const cooldownKey = `last_viewed_advice_${title.replace(/\s+/g, '_')}`;
+    const lastViewed = localStorage.getItem(cooldownKey);
+    
+    // 1 hour cooldown per advice to avoid spamming
+    if (lastViewed && Date.now() - parseInt(lastViewed, 10) < 60 * 60 * 1000) return;
+
+    const truncated = content && content.length > 150 ? content.substring(0, 147) + "..." : content;
+    await sendTelegramMessage(`💡 موري ظهرلها وبتقرأ دلوقتي نصيحة:\n"**${title}**"\n\n${truncated}`);
+    localStorage.setItem(cooldownKey, Date.now().toString());
   };
 
   const trackMood = (moodKey) => {
@@ -321,6 +356,7 @@ export function useTelegramBot() {
     buildMessageWithMood, sendPulse, sendEmergency, sendReaction, trackMessageRead,
     trackMood, trackReaction, trackSectionEntrance, trackSongPlay, trackFavorite,
     sendNoteReaction, trackDeepEngagement, trackAtmosphereChange, trackReasonOpened,
-    trackReasonArchived, trackHesitation, trackMilestone, sendTelegramMessage, sendTelegramMedia
+    trackReasonArchived, trackHesitation, trackMilestone, sendTelegramMessage, sendTelegramMedia,
+    trackMessageViewed, trackAdviceViewed
   };
 }

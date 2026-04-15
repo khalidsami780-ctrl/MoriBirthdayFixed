@@ -49,12 +49,13 @@ export default function SafeBox() {
   const [shouldPoll, setShouldPoll] = useState(false)
   const comfortTimeoutRef = useRef(null)
   
-  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage, sendTelegramMedia, trackMood } = useTelegramBot()
+  const { trackSafeBoxOpen, buildMessageWithMood, pollTelegramReplies, sendPulse, sendEmergency, sendTelegramMessage, sendTelegramMedia, trackMood, trackSectionEntrance, trackMessageViewed } = useTelegramBot()
   const { pushNotification } = useNotifications()
 
   useEffect(() => {
     trackSafeBoxOpen();
-  }, [trackSafeBoxOpen])
+    trackSectionEntrance("صندوق الأمان (SafeBox)");
+  }, [trackSafeBoxOpen, trackSectionEntrance])
 
   useEffect(() => {
     if (shouldPoll) {
@@ -87,6 +88,10 @@ export default function SafeBox() {
     trackMood(moodKey);
     localStorage.setItem('mori_active_mood', moodKey);
     localStorage.setItem('mori_mood_set_time', Date.now().toString());
+
+    // Full Tracking: notify about the message that appeared
+    const moodLabel = moodDatabase[moodKey]?.label || moodKey;
+    trackMessageViewed(`رسالة طمأنينة لحالة [${moodLabel}]`, messages[randomIdx]);
 
     setStage('comfort_view')
   }

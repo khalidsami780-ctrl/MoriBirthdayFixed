@@ -144,6 +144,17 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
     return () => observer.disconnect();
   }, [post.text]);
 
+  const { trackMessageViewed } = useTelegramBot();
+  useEffect(() => {
+    let timeout;
+    if (inView) {
+      timeout = setTimeout(() => {
+        trackMessageViewed(post.title || "بدون عنوان", post.text);
+      }, 2000);
+    }
+    return () => clearTimeout(timeout);
+  }, [inView, post.title, post.text, trackMessageViewed]);
+
   return (
     <motion.article
       id={`message-${post.id}`}
@@ -217,7 +228,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
             onClick={() => {
               setIsExpanded(!isExpanded);
               if (!isExpanded && !hasNotifiedRead) {
-                trackMessageRead(post.title);
+                trackMessageRead(post.title, post.text);
                 setHasNotifiedRead(true);
               }
             }}
@@ -428,6 +439,16 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       return stored[post.id] || null
     } catch { return null }
   })
+  const { trackAdviceViewed } = useTelegramBot();
+  useEffect(() => {
+    let timeout;
+    if (inView) {
+      timeout = setTimeout(() => {
+        trackAdviceViewed(post.title || "بدون عنوان", post.text);
+      }, 2000);
+    }
+    return () => clearTimeout(timeout);
+  }, [inView, post.title, post.text, trackAdviceViewed]);
 
   const handleReact = (emoji) => {
     setActiveEmoji(emoji)
