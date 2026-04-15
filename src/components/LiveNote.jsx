@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 
@@ -14,7 +14,7 @@ export default function LiveNote() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [activeNote, setActiveNote] = useState(null)
   const [isMusicExpanded, setIsMusicExpanded] = useState(false)
-  const { pollTelegramReplies, sendNoteReaction } = useTelegramBot()
+  const { pollTelegramReplies, sendNoteReaction } = useTelegram()
 
   useEffect(() => {
     const handleMusicState = (e) => setIsMusicExpanded(e.detail.isExpanded);
@@ -82,7 +82,7 @@ export default function LiveNote() {
     if (!activeNote) return;
     const reactKey = `mori_story_reacted_${activeNote.id}`;
     if (!localStorage.getItem(reactKey)) {
-        sendNoteReaction(activeNote);
+        sendNoteReaction({ type: 'note', id: activeNote.id, text: activeNote.text });
         localStorage.setItem(reactKey, 'true');
         // Force re-render to update heart locally
         setActiveNote({...activeNote, reacted: true});

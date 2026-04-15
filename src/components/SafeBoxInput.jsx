@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTelegramBot } from '../hooks/useTelegramBot.js';
 
 /**
  * SafeBoxInput Premium Redesign
@@ -12,9 +11,10 @@ export default function SafeBoxInput({
   onMediaSend,
   onVoiceSend,
   locks = { text: false, voice: false, media: false },
-  placeholder = "اكتبي حاجة لخالد من قلبك..." 
+  placeholder = "اكتبي حاجة لخالد من قلبك...",
+  value = "",
+  onChange = () => {}
 }) {
-  const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [mediaFiles, setMediaFiles] = useState([]); // { id, file, type, preview }
   const [isFocused, setIsFocused] = useState(false);
@@ -23,9 +23,7 @@ export default function SafeBoxInput({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const textareaRef = useRef(null);
-  const hesitationTimerRef = useRef(null);
   
-  const { trackHesitation } = useTelegramBot();
 
   // --- Auto-expand textarea logic ---
   useEffect(() => {
@@ -33,7 +31,7 @@ export default function SafeBoxInput({
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [text]);
+  }, [value]);
 
   const startRecording = async () => {
     if (locks.voice) return;
@@ -91,10 +89,8 @@ export default function SafeBoxInput({
   };
 
   const handleSend = () => {
-    if (hesitationTimerRef.current) clearTimeout(hesitationTimerRef.current);
-    if (text.trim() && !locks.text) {
-      onSend(text);
-      setText('');
+    if (value.trim() && !locks.text) {
+      onSend(value);
     }
     if (mediaFiles.length > 0 && !locks.media) {
       mediaFiles.forEach(item => onMediaSend(item.type, item.file));
@@ -170,25 +166,10 @@ export default function SafeBoxInput({
           ref={textareaRef}
           style={S.input}
           placeholder={locks.text ? "🔒 في وضع الاستراحة..." : placeholder}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            if (e.target.value.length === 0 && hesitationTimerRef.current) {
-              clearTimeout(hesitationTimerRef.current);
-            }
-          }}
-          onFocus={() => {
-            setIsFocused(true);
-            if (hesitationTimerRef.current) clearTimeout(hesitationTimerRef.current);
-          }}
-          onBlur={() => {
-            setIsFocused(false);
-            if (text.length > 10) {
-               hesitationTimerRef.current = setTimeout(() => {
-                   trackHesitation();
-               }, 60000);
-            }
-          }}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           disabled={locks.text || isRecording}
           rows={1}
         />
@@ -229,11 +210,11 @@ export default function SafeBoxInput({
             whileTap={{ scale: 0.95 }}
             style={{
               ...S.sendBtn,
-              background: (text.trim() || mediaFiles.length > 0) ? '#fff' : 'rgba(255,255,255,0.08)',
-              color: (text.trim() || mediaFiles.length > 0) ? '#0f172a' : 'rgba(255,255,255,0.2)',
+              background: (value.trim() || mediaFiles.length > 0) ? '#fff' : 'rgba(255,255,255,0.08)',
+              color: (value.trim() || mediaFiles.length > 0) ? '#0f172a' : 'rgba(255,255,255,0.2)',
             }}
             onClick={handleSend}
-            disabled={(!text.trim() && mediaFiles.length === 0) || isRecording}
+            disabled={(!value.trim() && mediaFiles.length === 0) || isRecording}
           >
             إرسال
           </motion.button>

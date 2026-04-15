@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { playlist } from '../data/playlist'
 import { createPortal } from 'react-dom'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 
 export default function FloatingMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -31,7 +31,7 @@ export default function FloatingMusicPlayer() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   
-  const { trackSongPlay } = useTelegramBot()
+  const { trackSongPlay } = useTelegram()
   const currentTrack = playlist[currentTrackIndex]
 
   // Handle Romantic Notice

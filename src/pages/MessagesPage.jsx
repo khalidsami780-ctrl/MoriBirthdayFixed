@@ -8,7 +8,7 @@ import { messages as messagePosts } from '../data/messages.js'
 import { tips as advicePosts } from '../data/tips.js'
 import { milestones } from '../data/timeCapsule.js'
 import { PINNED_MESSAGE_IDS } from '../data/pinnedConfig.js'
-import { useTelegramBot } from '../hooks/useTelegramBot.js'
+import { useTelegram } from '../context/TelegramContextCore.jsx'
 import { useNotifications } from '../hooks/useNotifications.js'
 import { supabase } from '../lib/supabase.js'
 
@@ -82,7 +82,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
   const [isExpanded, setIsExpanded] = useState(false)
   const [needsReadMore, setNeedsReadMore] = useState(false)
   const [hasNotifiedRead, setHasNotifiedRead] = useState(false)
-  const { sendReaction, trackMessageRead, trackReaction, trackFavorite } = useTelegramBot()
+  const { sendNoteReaction, trackMessageRead, trackReaction, trackFavorite } = useTelegram()
   const { pushNotification } = useNotifications()
 
   // Load interaction states from localStorage
@@ -114,7 +114,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
       trackReaction(emoji);
     } catch (e) { console.error(e) }
 
-    sendReaction(post.title || "بدون عنوان", emoji)
+    sendNoteReaction({ type: 'message', id: post.id, text: post.title || "بدون عنوان", emoji })
     pushNotification("تم إرسال الريأكت بنجاح 💙")
   }
 
@@ -144,7 +144,7 @@ const MessageCard = memo(function MessageCard({ post, delay = 0, pinned = false 
     return () => observer.disconnect();
   }, [post.text]);
 
-  const { trackMessageViewed } = useTelegramBot();
+  const { trackMessageViewed } = useTelegram()
   useEffect(() => {
     let timeout;
     if (inView) {
@@ -422,7 +422,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
   const ref    = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.08 })
   const validMedia = post.media || []
-  const { sendReaction, trackReaction, trackFavorite } = useTelegramBot()
+  const { sendNoteReaction, trackReaction, trackFavorite } = useTelegram()
   const { pushNotification } = useNotifications()
 
   const [isFavorite, setIsFavorite] = useState(() => {
@@ -439,7 +439,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       return stored[post.id] || null
     } catch { return null }
   })
-  const { trackAdviceViewed } = useTelegramBot();
+  const { trackAdviceViewed } = useTelegram()
   useEffect(() => {
     let timeout;
     if (inView) {
@@ -461,7 +461,7 @@ const AdviceCard = memo(function AdviceCard({ post, delay = 0 }) {
       trackReaction(emoji);
     } catch (e) { console.error(e) }
 
-    sendReaction(post.title || "بدون عنوان", emoji)
+    sendNoteReaction({ type: 'message', id: post.id, text: post.title || "بدون عنوان", emoji })
     pushNotification("تم إرسال الريأكت بنجاح 💙")
   }
 
@@ -1173,7 +1173,7 @@ export default function MessagesPage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
   const handleTab = useCallback(t => setActiveTab(t), [])
 
-  const { trackSectionEntrance } = useTelegramBot()
+  const { trackSectionEntrance } = useTelegram()
 
   useEffect(() => {
     trackSectionEntrance("الرسائل والخواطر 📖")

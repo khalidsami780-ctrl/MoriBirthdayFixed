@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTelegramBot } from '../hooks/useTelegramBot.js';
+import { useTelegram } from '../context/TelegramContextCore.jsx';
 
 /**
  * AtmosphereController
@@ -9,7 +9,7 @@ import { useTelegramBot } from '../hooks/useTelegramBot.js';
 export default function AtmosphereController() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentAtmosphere, setCurrentAtmosphere] = useState(() => localStorage.getItem('mori_atmosphere') || 'default');
-  const { trackAtmosphereChange } = useTelegramBot();
+  const { trackAtmosphereChange } = useTelegram()
 
   const atmospheres = [
     { id: 'default', label: 'الوضع الأصلي', icon: '✨' },

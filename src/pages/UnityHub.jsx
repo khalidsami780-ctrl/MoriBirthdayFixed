@@ -2,14 +2,14 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ReasonsJar from '../components/ReasonsJar.jsx';
 import SoulGarden from '../components/SoulGarden.jsx';
-import { useTelegramBot } from '../hooks/useTelegramBot.js';
+import { useTelegram } from '../context/TelegramContextCore.jsx';
 
 /**
  * UnityHub
  * The headquarters for all interactive "Unity" features (Garden, Jar).
  */
 export default function UnityHub() {
-  const { trackSectionEntrance } = useTelegramBot();
+  const { trackSectionEntrance } = useTelegram();
 
   useEffect(() => {
     trackSectionEntrance('الرابط');

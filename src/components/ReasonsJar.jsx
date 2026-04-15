@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTelegramBot } from '../hooks/useTelegramBot.js';
+import { useTelegram } from '../context/TelegramContextCore.jsx';
 import { supabase } from '../lib/supabase.js';
 
 /**
@@ -12,7 +12,7 @@ export default function ReasonsJar() {
   const [reasons, setReasons] = useState([]);
   const [selectedReason, setSelectedReason] = useState(null);
   const [showArchive, setShowArchive] = useState(false);
-  const { trackReasonOpened, trackReasonArchived } = useTelegramBot();
+  const { trackReasonOpened, trackReasonArchived } = useTelegram();
 
   useEffect(() => {
     const loadJar = async () => {

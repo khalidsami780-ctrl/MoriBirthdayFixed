@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 
 /**
  * PulseOverlay Component
@@ -9,7 +9,7 @@ import { useTelegramBot } from '../hooks/useTelegramBot'
  */
 export default function PulseOverlay() {
   const [activePulse, setActivePulse] = useState(null)
-  const { pollTelegramReplies, sendTelegramMessage } = useTelegramBot()
+  const { pollTelegramReplies, sendTelegramMessage } = useTelegram()
 
   useEffect(() => {
     // Check for pulse signal in localStorage

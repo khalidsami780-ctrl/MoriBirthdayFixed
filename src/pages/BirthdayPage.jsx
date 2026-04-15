@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 import NavDots         from '../components/NavDots.jsx'
 import IntroGate       from '../components/IntroGate.jsx'
 import WorldSwitcher   from '../shared/WorldSwitcher.jsx'
@@ -23,7 +23,7 @@ export default function BirthdayPage() {
   const [isIntroDone,   setIsIntroDone]   = useState(false)
   const [activeSection, setActiveSection] = useState(0)
 
-  const { trackSectionEntrance } = useTelegramBot()
+  const { trackSectionEntrance } = useTelegram()
 
   const setRef = useCallback((index) => (el) => {
     sectionRefs.current[index] = el

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Stars from '../components/Stars.jsx'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 
 
 // ── Eid songs ─────────────────
@@ -194,7 +194,7 @@ export default function EidMusicSection({ sectionRef }) {
   const [dur,     setDur]     = useState(0)
   const [vol,     setVol]     = useState(0.8)
   const [muted,   setMuted]   = useState(false)
-  const { trackSongPlay } = useTelegramBot()
+  const { trackSongPlay } = useTelegram()
 
   const song    = EID_PLAYLIST[idx]
 

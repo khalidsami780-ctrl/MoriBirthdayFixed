@@ -21,7 +21,7 @@ const AtmosphereController = lazy(() => import('./components/AtmosphereControlle
 
 import useActiveTheme from './hooks/useActiveTheme.js'
 import { isTabletSpecific } from './hooks/useTelegramBot.js'
-import { useTelegramBot } from './hooks/useTelegramBot.js'
+import { useTelegram } from './context/TelegramContextCore.jsx'
 import { useSupabaseSync } from './hooks/useSupabaseSync.js'
 import { GlobalSessionTracker } from './hooks/useSessionTracker.js'
 import { supabase } from './lib/supabase.js'
@@ -51,7 +51,7 @@ function PageLoader() {
 export default function App() {
   const location = useLocation()
   const [showEnhancements, setShowEnhancements] = useState(false)
-  const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement, pollTelegramReplies, sendTelegramMessage } = useTelegramBot()
+  const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement, pollTelegramReplies, sendTelegramMessage } = useTelegram()
   const { themeStyles } = useActiveTheme()
   
   // Migrate old localStorage data to Supabase (Runs once per device)

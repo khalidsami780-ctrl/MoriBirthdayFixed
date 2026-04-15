@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Stars from '../components/Stars.jsx'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 
 const sYourSong = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620429/your-song_nwu6ga.mp3'
 const sAntaElHob = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620429/anta-el-hob_pa2zwf.mp3'
@@ -162,7 +162,7 @@ export default function MusicSection({ sectionRef }) {
   const [dur,     setDur]     = useState(0)
   const [vol,     setVol]     = useState(0.8)
   const [muted,   setMuted]   = useState(false)
-  const { trackSongPlay } = useTelegramBot()
+  const { trackSongPlay } = useTelegram()
 
   const song = PLAYLIST[idx]
 

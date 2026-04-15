@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { useTelegramBot } from '../hooks/useTelegramBot'
+import { useTelegram } from '../context/TelegramContextCore'
 
 export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const videoRef = useRef(null)
-  const { trackSongPlay } = useTelegramBot()
+  const { trackSongPlay } = useTelegram()
 
   // Tracking logic for audio/video media within FullscreenViewer
   useEffect(() => {
