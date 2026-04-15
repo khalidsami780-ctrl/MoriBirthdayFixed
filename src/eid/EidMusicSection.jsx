@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Stars from '../components/Stars.jsx'
+import { useTelegramBot } from '../hooks/useTelegramBot'
 
 
 // ── Eid songs ─────────────────
@@ -193,8 +194,21 @@ export default function EidMusicSection({ sectionRef }) {
   const [dur,     setDur]     = useState(0)
   const [vol,     setVol]     = useState(0.8)
   const [muted,   setMuted]   = useState(false)
+  const { trackSongPlay } = useTelegramBot()
 
   const song    = EID_PLAYLIST[idx]
+
+  // Tracking logic: Notify Khalid if song plays for more than 10 seconds
+  useEffect(() => {
+    let trackTimer;
+    if (playing && song) {
+      trackTimer = setTimeout(() => {
+        trackSongPlay(song.title, song.artist);
+      }, 10000); // 10 seconds threshold
+    }
+    return () => { if (trackTimer) clearTimeout(trackTimer); };
+  }, [playing, idx, song, trackSongPlay]);
+
   const hasAudio = true
 
   useEffect(() => {

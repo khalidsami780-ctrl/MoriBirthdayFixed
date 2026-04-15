@@ -20,8 +20,11 @@ const GlobalAtmosphere = lazy(() => import('./components/GlobalAtmosphere.jsx'))
 const AtmosphereController = lazy(() => import('./components/AtmosphereController.jsx'))
 
 import useActiveTheme from './hooks/useActiveTheme.js'
+import { isTabletSpecific } from './hooks/useTelegramBot.js'
 import { useTelegramBot } from './hooks/useTelegramBot.js'
 import { useSupabaseSync } from './hooks/useSupabaseSync.js'
+import { GlobalSessionTracker } from './hooks/useSessionTracker.js'
+import { supabase } from './lib/supabase.js'
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
   return (
@@ -48,7 +51,7 @@ function PageLoader() {
 export default function App() {
   const location = useLocation()
   const [showEnhancements, setShowEnhancements] = useState(false)
-  const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement } = useTelegramBot()
+  const { checkFirstVisitToday, checkWeeklyReport, trackDeepEngagement, pollTelegramReplies, sendTelegramMessage } = useTelegramBot()
   const { themeStyles } = useActiveTheme()
   
   // Migrate old localStorage data to Supabase (Runs once per device)
@@ -58,7 +61,68 @@ export default function App() {
     // Initial tracking on app mount
     checkFirstVisitToday()
     checkWeeklyReport()
-  }, [checkFirstVisitToday, checkWeeklyReport])
+
+    // --- 1. Inactivity Alert (Checked by Khalid's Device ideally, or globally) ---
+    if (!isTabletSpecific()) {
+      supabase.from('mori_presence').select('*').eq('id', 1).maybeSingle().then(({ data }) => {
+        if (data && data.last_seen) {
+          const daysAway = (Date.now() - data.last_seen) / (1000 * 60 * 60 * 24);
+          if (daysAway > 3 && !sessionStorage.getItem('inactivity_alert_sent')) {
+            sendTelegramMessage(`⚠️ موري مفتحتش الملاذ الآمن بقالها أكثر من ${Math.floor(daysAway)} أيام.. لعل المانع خير، حاول تطمن عليها 💌`);
+            sessionStorage.setItem('inactivity_alert_sent', 'true');
+          }
+        }
+      });
+    }
+
+    // --- 2. Live Presence Heartbeat (Mori's Device) ---
+    let presenceInterval;
+    if (isTabletSpecific()) {
+      const updatePresence = async (isOnline = true) => {
+        const { error } = await supabase.from('mori_presence').upsert(
+          { id: 1, online: isOnline, last_seen: Date.now() },
+          { onConflict: 'id' }
+        );
+        if (error && error.code !== 'PGRST116') console.log("Presence Error:", error);
+      };
+      updatePresence(true);
+      presenceInterval = setInterval(() => updatePresence(true), 60 * 1000);
+      
+      const handleUnload = () => updatePresence(false);
+      window.addEventListener('beforeunload', handleUnload);
+
+      return () => {
+        clearInterval(presenceInterval);
+        window.removeEventListener('beforeunload', handleUnload);
+        updatePresence(false);
+      };
+    }
+  }, [checkFirstVisitToday, checkWeeklyReport, sendTelegramMessage])
+
+  // --- 3. Handle System Bot Commands ---
+  useEffect(() => {
+    return pollTelegramReplies(
+      () => {}, () => {}, 
+      async (signal) => {
+        if (signal.type === 'status') {
+          const { data } = await supabase.from('mori_presence').select('*').eq('id', 1).maybeSingle();
+          if (data && data.online && (Date.now() - data.last_seen < 120000)) {
+            sendTelegramMessage("🟢 موري متصلة بالموقع الآن.");
+          } else {
+            const timeAgo = data?.last_seen ? new Date(data.last_seen).toLocaleString('ar-EG') : 'غير معروف';
+            sendTelegramMessage(`🔴 أوفلاين الآن. (آخر ظهور: ${timeAgo})`);
+          }
+        } else if (signal.type === 'report') {
+          checkWeeklyReport(true); // Assuming we can force it, wait checkWeeklyReport checks day
+          // Forcing report by changing local storage before call temporarily
+          const og = localStorage.getItem('mori_weekly_report_sent');
+          localStorage.setItem('mori_weekly_report_sent', 'force');
+          checkWeeklyReport();
+          localStorage.setItem('mori_weekly_report_sent', og);
+        }
+      }
+    );
+  }, [pollTelegramReplies, sendTelegramMessage, checkWeeklyReport]);
 
   // Global Engagement Timer (tracks if she spends a long time in the site today)
   useEffect(() => {
@@ -141,6 +205,9 @@ export default function App() {
               <AtmosphereController />
             </Suspense>
           )}
+
+          {/* Global singleton session tracker */}
+          <GlobalSessionTracker sendTelegramMessage={sendTelegramMessage} />
         </div>
       </Suspense>
   )

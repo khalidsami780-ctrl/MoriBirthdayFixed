@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTelegramBot } from '../hooks/useTelegramBot.js';
 
 /**
  * SafeBoxInput Premium Redesign
@@ -22,6 +23,9 @@ export default function SafeBoxInput({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const textareaRef = useRef(null);
+  const hesitationTimerRef = useRef(null);
+  
+  const { trackHesitation } = useTelegramBot();
 
   // --- Auto-expand textarea logic ---
   useEffect(() => {
@@ -87,6 +91,7 @@ export default function SafeBoxInput({
   };
 
   const handleSend = () => {
+    if (hesitationTimerRef.current) clearTimeout(hesitationTimerRef.current);
     if (text.trim() && !locks.text) {
       onSend(text);
       setText('');
@@ -166,9 +171,24 @@ export default function SafeBoxInput({
           style={S.input}
           placeholder={locks.text ? "🔒 في وضع الاستراحة..." : placeholder}
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onChange={(e) => {
+            setText(e.target.value);
+            if (e.target.value.length === 0 && hesitationTimerRef.current) {
+              clearTimeout(hesitationTimerRef.current);
+            }
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            if (hesitationTimerRef.current) clearTimeout(hesitationTimerRef.current);
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            if (text.length > 10) {
+               hesitationTimerRef.current = setTimeout(() => {
+                   trackHesitation();
+               }, 60000);
+            }
+          }}
           disabled={locks.text || isRecording}
           rows={1}
         />

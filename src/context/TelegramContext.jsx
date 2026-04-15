@@ -56,30 +56,111 @@ export function TelegramProvider({ children }) {
         for (const update of data.result) {
           maxId = Math.max(maxId, update.update_id);
 
-          if (update.callback_query) {
-            const replyText = update.callback_query.data;
-            let toastText = "";
-            if (replyText === "reply_received") toastText = "💙 خالد: وصلتني";
-            if (replyText === "reply_pray") toastText = "🤲 خالد: بدعيلك";
-            if (replyText === "reply_ok") toastText = "✨ خالد: أنتِ بخير";
-            
-            if (toastText) {
-              listenersRef.current.onReply.forEach(cb => cb(toastText));
-            }
-            
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ callback_query_id: update.callback_query.id })
-            });
-          }
+            // Callback Handling (Confirmation buttons)
+            if (update.callback_query) {
+              const callbackData = update.callback_query.data;
+              let toastText = "";
+              
+              if (callbackData === "reply_received") toastText = "💙 خالد: وصلتني";
+              if (callbackData === "reply_pray") toastText = "🤲 خالد: بدعيلك";
+              if (callbackData === "reply_ok") toastText = "✨ خالد: أنتِ بخير";
+              
+              // New: Handle Voice Note Confirmation
+              if (callbackData.startsWith('confirm_vn_')) {
+                  const msgIdStr = callbackData.replace('confirm_vn_', '');
+                  const fileId = localStorage.getItem(`pending_vn_${msgIdStr}`);
+                  
+                  if (fileId) {
+                      const url = await getTelegramFileUrl(fileId);
+                      if (url) {
+                          const noteId = parseInt(msgIdStr, 10);
+                          const noteObj = { id: noteId, type: 'voice', url, text: "رسالة صوتية من خالد 🎤", timestamp: Date.now() };
+                          
+                          const liveNotes = JSON.parse(localStorage.getItem('mori_live_notes_stack') || '[]');
+                          liveNotes.push(noteObj);
+                          localStorage.setItem('mori_live_notes_stack', JSON.stringify(liveNotes));
+                          
+                          // Sync to Supabase (Now using bigint ID and fixed table)
+                          await supabase.from('live_note').upsert({ id: noteId, data: noteObj, timestamp: Date.now() });
+                          listenersRef.current.onNote.forEach(cb => cb(noteObj));
+                          
+                          // Cleanup
+                          localStorage.removeItem(`pending_vn_${msgIdStr}`);
 
-          if (update.message && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
-            const text = update.message.text?.trim() || "";
-            
-            // Pulse / Heart
-            if (text.match(/^[/\\](pulse|heart)$/i)) {
-              const pulseSignal = { id: update.message.message_id, timestamp: Date.now() };
+                          // Notify user of success
+                          await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: "✅ تم رفع التسجيل الصوتي لموري بنجاح! ✨" })
+                          });
+                      }
+                  } else {
+                      // Handle expired or missing fileId
+                      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: "⚠️ عذراً، انتهت صلاحية طلب الرفع أو حدث خطأ. برجاء إعادة إرسال الفويس نوت." })
+                      });
+                  }
+              }
+
+              if (callbackData.startsWith('cancel_vn_')) {
+                  const msgId = callbackData.replace('cancel_vn_', '');
+                  localStorage.removeItem(`pending_vn_${msgId}`);
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: "❌ تم إلغاء رفع التسجيل الصوتي." })
+                  });
+              }
+              
+              if (toastText) {
+                listenersRef.current.onReply.forEach(cb => cb(toastText));
+              }
+              
+              await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ callback_query_id: update.callback_query.id })
+              });
+              continue;
+            }
+
+            if (update.message && String(update.message.chat.id) === String(TELEGRAM_CHAT_ID)) {
+              const text = update.message.text?.trim() || "";
+
+              // Handle Voice Note Security Flow
+              if (update.message.voice) {
+                  const voice = update.message.voice;
+                  const msgId = update.message.message_id;
+                  
+                  // Store file_id locally to bypass callback_data size limit (64 bytes)
+                  localStorage.setItem(`pending_vn_${msgId}`, voice.file_id);
+
+                  // Send confirmation keyboard
+                  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      chat_id: TELEGRAM_CHAT_ID, 
+                      text: "🎤 تم استقبال تسجيل صوتي.. هل تريد رفعه لحالات موري المباشرة؟",
+                      reply_markup: {
+                        inline_keyboard: [
+                          [
+                            { text: "✅ نعم، ارفعه الآن", callback_data: `confirm_vn_${msgId}` },
+                            { text: "❌ إلغاء", callback_data: `cancel_vn_${msgId}` }
+                          ]
+                        ]
+                      }
+                    })
+                  });
+                  continue;
+              }
+
+              // Pulse / Heart / Commands
+              if (text.match(/^[/\\](pulse|heart|hug|status|report|withher|withyou)$/i)) {
+              const cmd = text.replace(/^[/\\]/, '').toLowerCase();
+              const pulseSignal = { id: update.message.message_id, type: cmd, timestamp: Date.now() };
               localStorage.setItem('mori_pulse_signal', JSON.stringify(pulseSignal));
               window.dispatchEvent(new Event('storage'));
               listenersRef.current.onPulse.forEach(cb => cb(pulseSignal));
@@ -162,6 +243,51 @@ export function TelegramProvider({ children }) {
               continue;
             }
 
+            // Undo Message (by index)
+            if (text.match(/^[/\\]undo_msg\s+\d+/i)) {
+              const num = parseInt(text.replace(/^[/\\]undo_msg\s+/i, '').trim(), 10);
+              const remoteMsgs = JSON.parse(localStorage.getItem('mori_remote_messages') || '[]');
+              if (num > 0 && num <= remoteMsgs.length) {
+                const msgToDelete = remoteMsgs[num - 1]; // 1-based index
+                const newMsgs = remoteMsgs.filter((_, idx) => idx !== num - 1);
+                localStorage.setItem('mori_remote_messages', JSON.stringify(newMsgs));
+                await supabase.from('remote_messages').delete().eq('id', msgToDelete.id);
+                // Also trigger storage event in same window context if needed
+                window.dispatchEvent(new Event('storage'));
+                listenersRef.current.onReply.forEach(cb => cb(`✅ تم مسح الرسالة السريعة رقم ${num}`));
+              } else {
+                listenersRef.current.onReply.forEach(cb => cb(`❌ لا توجد رسالة السريعة برقم ${num}`));
+              }
+              continue;
+            }
+
+            // Undo Tip (by index)
+            if (text.match(/^[/\\]undo_tip\s+\d+/i)) {
+              const num = parseInt(text.replace(/^[/\\]undo_tip\s+/i, '').trim(), 10);
+              const remoteTips = JSON.parse(localStorage.getItem('mori_remote_tips') || '[]');
+              if (num > 0 && num <= remoteTips.length) {
+                const tipToDelete = remoteTips[num - 1]; // 1-based index
+                const newTips = remoteTips.filter((_, idx) => idx !== num - 1);
+                localStorage.setItem('mori_remote_tips', JSON.stringify(newTips));
+                await supabase.from('remote_tips').delete().eq('id', tipToDelete.id);
+                window.dispatchEvent(new Event('storage'));
+                listenersRef.current.onReply.forEach(cb => cb(`✅ تم مسح النصيحة رقم ${num}`));
+              } else {
+                listenersRef.current.onReply.forEach(cb => cb(`❌ لا توجد نصيحة برقم ${num}`));
+              }
+              continue;
+            }
+
+            // Clear Live Notes
+            if (text.match(/^[/\\]clear_notes/i)) {
+                localStorage.removeItem('mori_live_notes_stack');
+                // The new system will use 'live_note' on Supabase
+                await supabase.from('live_note').delete().neq('id', -1);
+                window.dispatchEvent(new Event('storage'));
+                listenersRef.current.onReply.forEach(cb => cb(`✅ تم مسح جميع حالات المباشرة (الستوريز)`));
+                continue;
+            }
+
             // Garden Water
             if (text.match(/^[/\\]water$/i)) {
               const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
@@ -172,33 +298,36 @@ export function TelegramProvider({ children }) {
             }
 
             let noteObj = null;
-            if (update.message.photo) {
+            const caption = update.message.caption || "";
+            const isImageCmd = caption.match(/^[/\\]img/i);
+            const isVideoCmd = caption.match(/^[/\\]vid/i);
+            
+            if (update.message.photo && isImageCmd) {
               const photo = update.message.photo[update.message.photo.length - 1];
               const url = await getTelegramFileUrl(photo.file_id);
-              if (url) noteObj = { id: update.message.message_id, type: 'image', url, text: update.message.caption || "", timestamp: Date.now() };
-            } else if (update.message.video) {
+              if (url) noteObj = { id: update.message.message_id, type: 'image', url, text: caption.replace(/^[/\\]img\s*/i, '').trim(), timestamp: Date.now() };
+            } else if (update.message.video && isVideoCmd) {
               const url = await getTelegramFileUrl(update.message.video.file_id);
-              if (url) noteObj = { id: update.message.message_id, type: 'video', url, text: update.message.caption || "", timestamp: Date.now() };
+              if (url) noteObj = { id: update.message.message_id, type: 'video', url, text: caption.replace(/^[/\\]vid\s*/i, '').trim(), timestamp: Date.now() };
             } else if (update.message.video_note) {
+              // Video notes cannot have captions in normal Telegram UI, so they remain inherently allowed.
               const url = await getTelegramFileUrl(update.message.video_note.file_id);
               if (url) noteObj = { id: update.message.message_id, type: 'video_note', url, text: "", timestamp: Date.now() };
-            } else if (text) {
-              let noteContent = "";
-              if (text.match(/^[/\\]note\s+/i)) {
-                noteContent = text.replace(/^[/\\]note\s+/i, '').trim();
-              } else if (!text.startsWith('/') && !text.startsWith('\\')) {
-                noteContent = text;
-              }
-              
+            } else if (text && text.match(/^[/\\]note\s+/i)) {
+              const noteContent = text.replace(/^[/\\]note\s+/i, '').trim();
               if (noteContent) noteObj = { id: update.message.message_id, type: 'text', text: noteContent, timestamp: Date.now() };
             }
 
             if (noteObj) {
-              localStorage.setItem('mori_live_note', JSON.stringify(noteObj));
-              // Sync to Supabase (always overwrite ID 1 with latest note)
-              await supabase.from('live_note').upsert({ id: 1, data: noteObj, timestamp: Date.now() });
-              
-              listenersRef.current.onNote.forEach(cb => cb(noteObj));
+              const liveNotes = JSON.parse(localStorage.getItem('mori_live_notes_stack') || '[]');
+              if (!liveNotes.some(n => n.id === noteObj.id)) {
+                 liveNotes.push(noteObj);
+                 localStorage.setItem('mori_live_notes_stack', JSON.stringify(liveNotes));
+                 // Sync to Supabase as distinct records
+                 await supabase.from('live_note').upsert({ id: noteObj.id, data: noteObj, timestamp: Date.now() });
+                 
+                 listenersRef.current.onNote.forEach(cb => cb(noteObj));
+              }
             }
           }
         }

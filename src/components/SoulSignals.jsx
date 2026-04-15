@@ -6,6 +6,7 @@ const signals = [
   { type: 'pray',    icon: '🤲', label: 'دعيتلك',   color: '#e8c97e' },
   { type: 'safe',    icon: '🛡️', label: 'بخير الحمدلله',     color: '#f4c2d7' },
   { type: 'missing', icon: '❤️', label: 'وحشتني',  color: '#ff4d4d' },
+  { type: 'hug_request', icon: '🫂', label: 'محتاجة حضن', color: '#ff88cc' },
 ]
 
 export default function SoulSignals({ onSendPulse }) {

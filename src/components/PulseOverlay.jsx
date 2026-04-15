@@ -13,12 +13,19 @@ export default function PulseOverlay() {
 
   useEffect(() => {
     // Check for pulse signal in localStorage
+    // Tracks the last processed pulse to avoid duplicate triggers within the same session
+    let lastProcessedId = null;
+
     const handleStorage = () => {
       const stored = localStorage.getItem('mori_pulse_signal')
       if (stored) {
         const parsed = JSON.parse(stored)
-        // Only trigger if it's a new pulse (within the last 30 seconds)
-        if (Date.now() - parsed.timestamp < 30000) {
+        if (parsed.id === lastProcessedId) return; // Skip if we just processed it
+
+        // Only trigger if it's a new pulse (within the last 30 seconds) and of a valid type
+        const seenKey = `pulse_seen_${parsed.id}`
+        if (!localStorage.getItem(seenKey) && Date.now() - parsed.timestamp < 30000 && ['pulse', 'heart', 'hug', 'withher', 'withyou'].includes(parsed.type)) {
+           lastProcessedId = parsed.id;
            triggerPulse(parsed)
         }
       }
@@ -26,19 +33,22 @@ export default function PulseOverlay() {
 
     const triggerPulse = (signal) => {
         setActivePulse(signal)
+        const seenKey = `pulse_seen_${signal.id}`
         
-        if ('vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200])
+        if (!localStorage.getItem(seenKey)) {
+             if (signal.type === 'withher' || signal.type === 'withyou') {
+                 sendTelegramMessage(`👁️ موري حست بحضورك الخفي معاها دلوقتي! ✨`)
+             } else {
+                 try { if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]); } catch(e) {}
+                 sendTelegramMessage(`💖 موري استلمت التأثير دلوقتي وشافتها على شاشتها! ✨`)
+             }
+             localStorage.setItem(seenKey, 'true')
         }
 
+        const isCoPresence = signal.type === 'withher' || signal.type === 'withyou';
         const timer = setTimeout(() => {
             setActivePulse(null)
-            const seenKey = `pulse_seen_${signal.id}`
-            if (!localStorage.getItem(seenKey)) {
-                sendTelegramMessage(`💖 موري استلمت "نبضة حبك" دلوقتي وشافتها على شاشتها! ✨`)
-                localStorage.setItem(seenKey, 'true')
-            }
-        }, 6000) // 6 seconds auto-hide
+        }, isCoPresence ? 12000 : 6000) // 12 seconds for presence, 6 seconds for quick pulses
 
         return timer
     }
@@ -49,8 +59,10 @@ export default function PulseOverlay() {
         () => {}, // onReply
         () => {}, // onNote
         (signal) => {
-          if (pulseTimer) clearTimeout(pulseTimer);
-          pulseTimer = triggerPulse(signal)
+          if (['pulse', 'heart', 'hug', 'withher', 'withyou'].includes(signal.type)) {
+            if (pulseTimer) clearTimeout(pulseTimer);
+            pulseTimer = triggerPulse(signal)
+          }
         }
     )
 
@@ -66,7 +78,26 @@ export default function PulseOverlay() {
 
   return createPortal(
     <AnimatePresence>
-      {activePulse && (
+      {activePulse && (activePulse.type === 'withher' || activePulse.type === 'withyou') ? (
+        <motion.div
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           exit={{ opacity: 0 }}
+           style={S.coPresenceOverlay}
+           onClick={() => setActivePulse(null)}
+        >
+           <motion.div style={S.coPresenceGlowOuter} animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 4, repeat: Infinity }} />
+           
+           <motion.div
+             initial={{ y: 50, opacity: 0 }}
+             animate={{ y: 0, opacity: 1 }}
+             style={S.coPresenceToast}
+           >
+             <span style={{ fontSize: '1.2rem', filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.8))' }}>👁️</span>
+             <p style={S.coPresenceText}>خالد يقرأ ويشعر معكِ بهذه الكلمات الآن بصمت...</p>
+           </motion.div>
+        </motion.div>
+      ) : activePulse && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -92,7 +123,7 @@ export default function PulseOverlay() {
             }}
             style={S.heartContainer}
           >
-            <span style={S.heart}>❤️</span>
+            <span style={S.heart}>{activePulse.type === 'hug' ? '🫂' : '❤️'}</span>
             <motion.div 
                animate={{ scale: [1, 2], opacity: [0.5, 0] }}
                transition={{ duration: 1.5, repeat: Infinity }}
@@ -104,7 +135,7 @@ export default function PulseOverlay() {
             animate={{ y: 0, opacity: 1 }}
             style={S.text}
           >
-            خالد بيبعتلك نبضة حب دلوقتي... 💙
+            {activePulse.type === 'hug' ? 'روح خالد معاكي، بتطمنك وبتحتويكِ دلوقتي... 💙' : 'خالد بيبعتلك نبضة حب دلوقتي... 💙'}
           </motion.p>
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', marginTop: '10px' }}>
             اضغطي في أي مكان للإغلاق
@@ -117,6 +148,46 @@ export default function PulseOverlay() {
 }
 
 const S = {
+  coPresenceOverlay: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 1000000,
+    pointerEvents: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: '8vh'
+  },
+  coPresenceGlowOuter: {
+    position: 'absolute',
+    inset: 0,
+    boxShadow: 'inset 0 0 100px rgba(91, 156, 246, 0.5), 0 0 40px rgba(91, 156, 246, 0.2)',
+    border: '2px solid rgba(91, 156, 246, 0.3)',
+    borderRadius: '12px',
+    margin: '8px',
+    pointerEvents: 'none'
+  },
+  coPresenceToast: {
+    background: 'rgba(8, 20, 45, 0.85)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(91, 156, 246, 0.4)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(91, 156, 246, 0.3)',
+    borderRadius: '100px',
+    padding: '12px 24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    direction: 'rtl',
+    pointerEvents: 'auto',
+    cursor: 'pointer'
+  },
+  coPresenceText: {
+    fontFamily: "'Scheherazade New', serif",
+    fontSize: '1.25rem',
+    color: '#a8c8f8',
+    margin: 0
+  },
   overlay: {
     position: 'fixed',
     inset: 0,

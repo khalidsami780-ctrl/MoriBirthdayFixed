@@ -1,10 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
+import { useTelegramBot } from '../hooks/useTelegramBot'
 
 export default function FullscreenViewer({ mediaItems = [], initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const videoRef = useRef(null)
+  const { trackSongPlay } = useTelegramBot()
+
+  // Tracking logic for audio/video media within FullscreenViewer
+  useEffect(() => {
+    let trackTimer;
+    const item = mediaItems[currentIndex];
+    
+    // Track if it's audio or video
+    if (item && (item.type === 'audio' || item.type === 'video')) {
+      trackTimer = setTimeout(() => {
+          const typeLabel = item.type === 'audio' ? 'ملف صوتي' : 'فيديو';
+          const title = item.caption || item.title || typeLabel;
+          trackSongPlay(title, typeLabel === 'فيديو' ? 'مقطع فيديو' : 'صوت');
+      }, 10000); // 10 seconds threshold
+    }
+    
+    return () => { if (trackTimer) clearTimeout(trackTimer); };
+  }, [currentIndex, mediaItems, trackSongPlay]);
 
   const goToNext = useCallback((e) => {
     e?.stopPropagation()

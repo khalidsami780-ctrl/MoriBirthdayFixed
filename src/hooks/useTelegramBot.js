@@ -2,7 +2,7 @@ import { useEffect, useCallback } from 'react';
 import { moodDatabase } from '../data/moodMessages.js';
 import { useTelegram } from '../context/TelegramContextCore.jsx';
 
-const isMoriDevice = () => {
+export const isMoriDevice = () => {
   const isTouch = navigator.maxTouchPoints > 0
   const ua = navigator.userAgent.toLowerCase()
   const isMobileOrTablet = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)
@@ -10,7 +10,7 @@ const isMoriDevice = () => {
   return isTouch || isMobileOrTablet || isIPadOS
 }
 
-const isTabletSpecific = () => {
+export const isTabletSpecific = () => {
   const ua = navigator.userAgent.toLowerCase();
   
   // Explicitly check for mobile/tablet indicators
@@ -31,7 +31,7 @@ const isTabletSpecific = () => {
 export function useTelegramBot() {
   const { subscribe, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, getTelegramFileUrl } = useTelegram();
 
-  const sendTelegramMessage = async (text, extra = {}) => {
+  const sendTelegramMessage = useCallback(async (text, extra = {}) => {
     try {
       await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
         method: 'POST',
@@ -41,9 +41,9 @@ export function useTelegramBot() {
     } catch (e) {
       // Silent fail
     }
-  };
+  }, [TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]);
 
-  const sendTelegramMedia = async (type, file, caption = "") => {
+  const sendTelegramMedia = useCallback(async (type, file, caption = "") => {
     try {
       const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/send${type.charAt(0).toUpperCase() + type.slice(1)}`;
       const formData = new FormData();
@@ -58,8 +58,12 @@ export function useTelegramBot() {
     } catch (e) {
       console.error("Failed to send media", e);
     }
-  };
-
+  }, [TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]);
+  const trackAction = useCallback((action) => {
+    if (typeof window !== 'undefined') {
+       window.dispatchEvent(new CustomEvent('mori_track_action', { detail: action }));
+    }
+  }, []);
   const trackSafeBoxOpen = useCallback(async () => {
     try {
       if (!isTabletSpecific()) return;
@@ -187,6 +191,7 @@ export function useTelegramBot() {
     if (type === 'pray') text = "🤲 موري: لسه داعيالك في سجدتي... ✨";
     if (type === 'safe') text = "🛡️ موري: أنا بخير ومطمنة معاك... 🌸";
     if (type === 'missing') text = "❤️ موري: وحشتني جداً دلوقتي أوي... 💌";
+    if (type === 'hug_request') text = "🫂 موري بتقولك: محتاجة حضنك دلوقتي... 💙";
 
     if (text) {
       if (isTabletSpecific()) await sendTelegramMessage(text);
@@ -210,6 +215,8 @@ export function useTelegramBot() {
   const trackMessageRead = (title) => {
     if (!isTabletSpecific()) return;
     localStorage.setItem('mori_weekly_reads', (parseInt(localStorage.getItem('mori_weekly_reads') || '0') + 1).toString());
+    trackMilestone('reads');
+    trackAction({ type: 'read', value: title });
   };
 
   const trackMood = (moodKey) => {
@@ -219,6 +226,7 @@ export function useTelegramBot() {
       stats[moodKey] = (stats[moodKey] || 0) + 1;
       localStorage.setItem('mori_weekly_mood_stats', JSON.stringify(stats));
       localStorage.setItem('mori_garden_points', (parseFloat(localStorage.getItem('mori_garden_points') || '0') + 0.2).toString());
+      trackAction({ type: 'mood', value: moodKey, label: moodDatabase[moodKey]?.label || moodKey });
     } catch {}
   };
 
@@ -242,9 +250,18 @@ export function useTelegramBot() {
 
   const trackSongPlay = async (title, artist) => {
     if (!isTabletSpecific()) return;
-    if (localStorage.getItem('song_play_time') && Date.now() - parseInt(localStorage.getItem('song_play_time'), 10) < 5 * 60 * 1000) return;
-    await sendTelegramMessage(`🎵 موري بتسمع دلوقتي:\n"${title}" - ${artist} 🎶`);
-    localStorage.setItem('song_play_time', Date.now().toString());
+    trackAction({ type: 'song', value: title });
+    
+    const cooldownKey = `song_play_${title.replace(/\s+/g, '_')}`;
+    const lastPlayed = localStorage.getItem(cooldownKey);
+    // 20 minutes cooldown per unique song to prevent spam while allowing tracking of title changes
+    if (lastPlayed && Date.now() - parseInt(lastPlayed, 10) < 20 * 60 * 1000) return;
+    
+    const time = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+    const songInfo = artist && artist !== '—' ? `"${title}" - ${artist}` : `"${title}"`;
+    await sendTelegramMessage(`🎵 موري سمعت أغنية ${songInfo} الساعة ${time} 🎶`);
+    
+    localStorage.setItem(cooldownKey, Date.now().toString());
   };
 
   const trackFavorite = async (title, isAdded) => {
@@ -279,11 +296,31 @@ export function useTelegramBot() {
     await sendTelegramMessage(`📁 موري أرشفة ورقة في البرطمان:\n"${text}" ✅`);
   };
 
+  const trackHesitation = async () => {
+    if (!isTabletSpecific()) return;
+    await sendTelegramMessage(`👀 *تنبيه تردُّد:*\nموري كانت بتكتب رسالة طويلة وفضلت مترددة تمسح وتكتب، وفي الآخر قفلتها ومبعتتش حاجة... حاول تطمنها 💙`);
+  };
+
+  const trackMilestone = async (type) => {
+    if (!isTabletSpecific()) return;
+    const currentTotal = parseInt(localStorage.getItem(`mori_total_${type}`) || '0', 10);
+    const updatedTotal = currentTotal + 1;
+    localStorage.setItem(`mori_total_${type}`, updatedTotal.toString());
+    
+    // Alert at 50, 100, 200...
+    if ([50, 100, 200, 500].includes(updatedTotal)) {
+        let msg = "";
+        if (type === 'reads') msg = `🎉 موري أتمت قراءة الرسالة رقم ${updatedTotal} في الموقع!`;
+        if (type === 'safebox') msg = `🛡️ موري فتحت صندوق الأمان ${updatedTotal} مرة إجمالي! أنت ملاذها الحقيقي.`;
+        if (msg) await sendTelegramMessage(msg);
+    }
+  };
+
   return {
     trackSafeBoxOpen, checkWeeklyReport, checkFirstVisitToday, pollTelegramReplies,
     buildMessageWithMood, sendPulse, sendEmergency, sendReaction, trackMessageRead,
     trackMood, trackReaction, trackSectionEntrance, trackSongPlay, trackFavorite,
     sendNoteReaction, trackDeepEngagement, trackAtmosphereChange, trackReasonOpened,
-    trackReasonArchived, sendTelegramMessage, sendTelegramMedia
+    trackReasonArchived, trackHesitation, trackMilestone, sendTelegramMessage, sendTelegramMedia
   };
 }

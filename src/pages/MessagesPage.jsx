@@ -644,49 +644,7 @@ function MessagesSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
 
-  // Load Remote Messages from Supabase + localStorage
-  const [remoteMessages, setRemoteMessages] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('mori_remote_messages') || '[]')
-    } catch { return [] }
-  })
-
-  useEffect(() => {
-    const fetchRemoteMessages = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('remote_messages')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        if (data) {
-          const formatted = data.map(m => ({ ...m, isRemote: true, createdAt: Number(m.created_at) }));
-          setRemoteMessages(prev => {
-            const mergedMap = new Map();
-            prev.forEach(p => mergedMap.set(p.id, p));
-            formatted.forEach(f => mergedMap.set(f.id, f));
-            const final = Array.from(mergedMap.values());
-            localStorage.setItem('mori_remote_messages', JSON.stringify(final));
-            return final;
-          });
-        }
-      } catch (e) {
-        console.warn("Could not fetch remote messages from cloud", e);
-      }
-    };
-
-    fetchRemoteMessages();
-
-    const channel = supabase
-      .channel('messages_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'remote_messages' }, fetchRemoteMessages)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  const allMessages = useMemo(() => [...messagePosts, ...remoteMessages], [remoteMessages])
+  const allMessages = useMemo(() => [...messagePosts], [])
 
   const pinnedPosts = useMemo(() => (
     PINNED_MESSAGE_IDS
@@ -778,49 +736,7 @@ function AdviceSection({ searchTerm, dateFilter }) {
   const [visibleCount, setVisibleCount] = useState(5)
   const normalizedSearchTerm = searchTerm.trim().toLowerCase()
 
-  // Load Remote Tips from Supabase + localStorage
-  const [remoteTips, setRemoteTips] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('mori_remote_tips') || '[]')
-    } catch { return [] }
-  })
-
-  useEffect(() => {
-    const fetchRemoteTips = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('remote_tips')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        if (data) {
-          const formatted = data.map(t => ({ ...t, isRemote: true, createdAt: Number(t.created_at) }));
-          setRemoteTips(prev => {
-            const mergedMap = new Map();
-            prev.forEach(p => mergedMap.set(p.id, p));
-            formatted.forEach(f => mergedMap.set(f.id, f));
-            const final = Array.from(mergedMap.values());
-            localStorage.setItem('mori_remote_tips', JSON.stringify(final));
-            return final;
-          });
-        }
-      } catch (e) {
-        console.warn("Could not fetch remote tips from cloud", e);
-      }
-    };
-
-    fetchRemoteTips();
-
-    const channel = supabase
-      .channel('tips_sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'remote_tips' }, fetchRemoteTips)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  const allTips = useMemo(() => [...advicePosts, ...remoteTips], [remoteTips])
+  const allTips = useMemo(() => [...advicePosts], [])
 
   const filtered = useMemo(() => allTips.filter(post => {
     const matchesSearch = normalizedSearchTerm === '' ||
@@ -870,6 +786,125 @@ function AdviceSection({ searchTerm, dateFilter }) {
             onClick={() => setVisibleCount(c => c + 5)}
             style={SEC.loadMoreBtn}
             whileHover={{ boxShadow: '0 0 20px rgba(91,156,246,0.3)', borderColor: 'rgba(91,156,246,0.5)', color: 'rgba(200,228,255,0.9)' }}
+            whileTap={{ scale: 0.97 }}
+          >
+            عرض المزيد …
+          </motion.button>
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
+function QuickMessagesSection() {
+  const [remoteItems, setRemoteItems] = useState([])
+  const [visibleCount, setVisibleCount] = useState(10)
+
+  useEffect(() => {
+    // Mark as seen
+    localStorage.setItem('mori_last_seen_quick', Date.now().toString());
+    
+    const fetchRemoteData = async () => {
+      try {
+        const [msgsRes, tipsRes] = await Promise.all([
+          supabase.from('remote_messages').select('*').order('created_at', { ascending: false }),
+          supabase.from('remote_tips').select('*').order('created_at', { ascending: false })
+        ]);
+
+        let msgs = [];
+        let tips = [];
+        
+        if (msgsRes.data) {
+          msgs = msgsRes.data.map((m, idx) => ({ ...m, deleteId: idx + 1, isRemote: true, type: 'message', createdAt: Number(m.created_at) }));
+          localStorage.setItem('mori_remote_messages', JSON.stringify(msgs));
+        } else {
+          msgs = JSON.parse(localStorage.getItem('mori_remote_messages') || '[]').map((m, idx) => ({ ...m, deleteId: idx + 1, type: 'message' }));
+        }
+
+        if (tipsRes.data) {
+          tips = tipsRes.data.map((t, idx) => ({ ...t, deleteId: idx + 1, isRemote: true, type: 'tip', createdAt: Number(t.created_at) }));
+          localStorage.setItem('mori_remote_tips', JSON.stringify(tips));
+        } else {
+          tips = JSON.parse(localStorage.getItem('mori_remote_tips') || '[]').map((t, idx) => ({ ...t, deleteId: idx + 1, type: 'tip' }));
+        }
+
+        const combined = [...msgs, ...tips].sort((a, b) => b.createdAt - a.createdAt);
+        setRemoteItems(combined);
+      } catch (e) {
+        console.warn("Could not fetch remote quick items", e);
+        // Fallback to local storage
+        const msgs = JSON.parse(localStorage.getItem('mori_remote_messages') || '[]').map((m, idx) => ({ ...m, deleteId: idx + 1, type: 'message' }));
+        const tips = JSON.parse(localStorage.getItem('mori_remote_tips') || '[]').map((t, idx) => ({ ...t, deleteId: idx + 1, type: 'tip' }));
+        setRemoteItems([...msgs, ...tips].sort((a, b) => (b.createdAt || b.created_at) - (a.createdAt || a.created_at)));
+      }
+    };
+
+    fetchRemoteData();
+
+    const channelMsgs = supabase.channel('msgs_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'remote_messages' }, fetchRemoteData).subscribe();
+    const channelTips = supabase.channel('tips_sync_quick')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'remote_tips' }, fetchRemoteData).subscribe();
+
+    return () => { 
+      supabase.removeChannel(channelMsgs); 
+      supabase.removeChannel(channelTips); 
+    };
+  }, []);
+
+  const visible = remoteItems.slice(0, visibleCount);
+  const hasMore = visibleCount < remoteItems.length;
+
+  return (
+    <div style={{ width: '100%', maxWidth: 700, margin: '0 auto' }}>
+      <SectionHeader eyebrow="تحديثات مباشرة" title="رسائل سريعة" />
+      <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.35, duration:0.8 }} style={SEC.hint}>
+        هنا توصلك همسات ورسائل خالد اللحظية.. كوني دائماً بالقرب 💙
+      </motion.p>
+      
+      {remoteItems.length === 0 ? (
+        <p style={{ ...SEC.hint, marginTop: '2rem' }}>مفيش رسائل أو نصائح سريعة حالياً.. بس أكيد بيفكر فيكي دلوقتي ✨</p>
+      ) : (
+        <div style={SEC.list}>
+          <AnimatePresence initial={false}>
+            {visible.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: i >= visibleCount - 10 ? (i - (visibleCount - 10)) * 0.07 : 0 }}
+                style={{
+                  position: 'relative',
+                  padding: '4px',
+                  borderRadius: '22px',
+                  boxShadow: item.type === 'message' ? '0 0 25px rgba(236,72,153,0.25)' : '0 0 25px rgba(59,130,246,0.25)',
+                  background: item.type === 'message' 
+                    ? 'linear-gradient(135deg, rgba(236,72,153,0.5), transparent 60%)' 
+                    : 'linear-gradient(135deg, rgba(59,130,246,0.5), transparent 60%)'
+                }}
+              >
+                <div style={{ 
+                  position: 'absolute', top: '-10px', right: '20px', 
+                  background: item.type === 'message' ? '#ec4899' : '#3b82f6',
+                  color: '#fff', padding: '4px 12px', borderRadius: '15px',
+                  fontSize: '0.8rem', fontWeight: 'bold', fontFamily: "'Scheherazade New', serif",
+                  boxShadow: item.type === 'message' ? '0 4px 15px rgba(236,72,153,0.6)' : '0 4px 15px rgba(59,130,246,0.6)', zIndex: 10
+                }}>
+                  {item.type === 'message' ? `💌 رسالة عاجلة #${item.deleteId}` : `💡 نصيحة سريعة #${item.deleteId}`}
+                </div>
+                {item.type === 'message' ? <MessageCard post={item} /> : <AdviceCard post={item} />}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+      
+      {hasMore && (
+        <motion.div style={{ textAlign: 'center', marginTop: '2rem' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          <motion.button
+            onClick={() => setVisibleCount(c => c + 10)}
+            style={SEC.loadMoreBtn}
+            whileHover={{ boxShadow: '0 0 20px rgba(91,156,246,0.3)' }}
             whileTap={{ scale: 0.97 }}
           >
             عرض المزيد …
@@ -1190,10 +1225,24 @@ export default function MessagesPage() {
               ...TN.wrap, 
               flexDirection: isMobile ? 'column' : 'row', 
               borderRadius: isMobile ? '20px' : '999px',
-              marginBottom: 0, width: '100%', maxWidth: '600px',
+              marginBottom: 0, width: '100%', maxWidth: '750px',
             }}>
-              {['messages', 'advice', 'covenants'].map(id => {
-                const label = id === 'messages' ? 'الرسائل' : id === 'advice' ? 'النصائح' : 'مواثيقنا'
+              {['messages', 'advice', 'quick', 'covenants'].map(id => {
+                const label = id === 'messages' ? 'الرسائل' : id === 'advice' ? 'النصائح' : id === 'quick' ? 'رسائل سريعة' : 'مواثيقنا'
+                
+                // Unread calculation for quick tab
+                let showBadge = false;
+                if (id === 'quick' && activeTab !== 'quick') {
+                  const lastSeen = parseInt(localStorage.getItem('mori_last_seen_quick') || '0', 10);
+                  const remoteMsgs = JSON.parse(localStorage.getItem('mori_remote_messages') || '[]');
+                  const remoteTips = JSON.parse(localStorage.getItem('mori_remote_tips') || '[]');
+                  const allRemote = [...remoteMsgs, ...remoteTips];
+                  if (allRemote.length > 0) {
+                     const newest = Math.max(...allRemote.map(m => m.created_at || m.createdAt || 0));
+                     if (newest > lastSeen) showBadge = true;
+                  }
+                }
+
                 return (
                   <button key={id}
                     style={{ 
@@ -1207,13 +1256,25 @@ export default function MessagesPage() {
                       <motion.div layoutId="tab-bg" style={TN.bg}
                         transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                     )}
-                    <span style={{ position: 'relative' }}>{label}</span>
+                    <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      {label}
+                      {showBadge && (
+                        <motion.span 
+                          animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                          style={{
+                            width: '8px', height: '8px', borderRadius: '50%',
+                            background: '#ec4899', boxShadow: '0 0 10px #ec4899'
+                          }}
+                        />
+                      )}
+                    </span>
                   </button>
                 )
               })}
             </div>
 
-            {activeTab !== 'covenants' && (
+            {activeTab !== 'covenants' && activeTab !== 'quick' && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1263,6 +1324,7 @@ export default function MessagesPage() {
             >
               {activeTab === 'messages' && <MessagesSection searchTerm={searchTerm} dateFilter={dateFilter} />}
               {activeTab === 'advice' && <AdviceSection searchTerm={searchTerm} dateFilter={dateFilter} />}
+              {activeTab === 'quick' && <QuickMessagesSection />}
               {activeTab === 'covenants' && <CovenantsSection />}
             </motion.div>
           </AnimatePresence>

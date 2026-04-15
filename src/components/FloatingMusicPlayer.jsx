@@ -8,6 +8,12 @@ export default function FloatingMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
+  
+  // Custom event to notify other components about overlap prevention
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('musicPlayerStateChange', { detail: { isExpanded } }));
+  }, [isExpanded]);
+
   const [showPlaylist, setShowPlaylist] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -80,7 +86,7 @@ export default function FloatingMusicPlayer() {
     if (isPlaying && currentTrack) {
       trackTimer = setTimeout(() => {
         trackSongPlay(currentTrack.title, currentTrack.artist);
-      }, 5000); // 5 seconds threshold
+      }, 10000); // 10 seconds threshold
     }
 
     return () => {
