@@ -10,8 +10,8 @@ import SafeBoxInput from './SafeBoxInput.jsx'
 import SafeBoxGuide from './SafeBoxGuide.jsx'
 import { createPortal } from 'react-dom'
 
-const DISPLAY_COOLDOWN_MS = 1 * 24 * 60 * 60 * 1000 // 1 day limit
-const ACTUAL_COOLDOWN_MS  = 1 * 24 * 60 * 60 * 1000 // 1 day limit
+const DISPLAY_COOLDOWN_MS = 6 * 24 * 60 * 60 * 1000 // 6 days shown to user
+const ACTUAL_COOLDOWN_MS  = 3 * 24 * 60 * 60 * 1000 // 3 days actual secret limit
 
 function checkLock(type) {
   try {
