@@ -258,6 +258,15 @@ export function TelegramProvider({ children }) {
       return;
     }
 
+    // /Cmsg (Clear all remote messages)
+    if (text.match(/^[/\\]Cmsg/i)) {
+      localStorage.removeItem('mori_remote_messages');
+      await supabase.from('remote_messages').delete().neq('id', 'null_id');
+      window.dispatchEvent(new Event('storage'));
+      listenersRef.current.onReply.forEach(cb => cb('✅ تم مسح جميع الرسائل الفورية من الموقع'));
+      return;
+    }
+
     // /water
     if (text.match(/^[/\\]water$/i)) {
       const points = parseFloat(localStorage.getItem('mori_garden_points') || '0');
