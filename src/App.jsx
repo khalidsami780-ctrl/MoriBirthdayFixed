@@ -25,6 +25,7 @@ import { useTelegram } from './context/TelegramContextCore.jsx'
 import { useSupabaseSync } from './hooks/useSupabaseSync.js'
 import { GlobalSessionTracker } from './hooks/useSessionTracker.js'
 import { supabase } from './lib/supabase.js'
+
 /* ── Full-screen loading fallback ─────────────────────────── */
 function PageLoader() {
   return (
@@ -77,26 +78,29 @@ export default function App() {
 
     // --- 2. Live Presence Heartbeat (Mori's Device) ---
     let presenceInterval;
-    if (isTabletSpecific()) {
-      const updatePresence = async (isOnline = true) => {
-        const { error } = await supabase.from('mori_presence').upsert(
-          { id: 1, online: isOnline, last_seen: Date.now() },
-          { onConflict: 'id' }
-        );
-        if (error && error.code !== 'PGRST116') console.log("Presence Error:", error);
-      };
-      updatePresence(true);
-      presenceInterval = setInterval(() => updatePresence(true), 60 * 1000);
-      
-      const handleUnload = () => updatePresence(false);
-      window.addEventListener('beforeunload', handleUnload);
 
-      return () => {
-        clearInterval(presenceInterval);
-        window.removeEventListener('beforeunload', handleUnload);
-        updatePresence(false);
-      };
-    }
+    const updatePresence = async (isOnline = true) => {
+      const { error } = await supabase.from('mori_presence').upsert(
+        { id: 1, online: isOnline, last_seen: Date.now() },
+        { onConflict: 'id' }
+      );
+      if (error && error.code !== 'PGRST116') console.log("Presence Error:", error);
+    };
+
+    updatePresence(true);
+
+    // ⚡ أسرع عشان status يبقى دقيق
+    presenceInterval = setInterval(() => updatePresence(true), 5000);
+
+    const handleUnload = () => updatePresence(false);
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearInterval(presenceInterval);
+      window.removeEventListener('beforeunload', handleUnload);
+      updatePresence(false);
+    };
+
   }, [checkFirstVisitToday, checkWeeklyReport, sendTelegramMessage])
 
   // --- 3. Handle System Bot Commands ---
@@ -113,8 +117,7 @@ export default function App() {
             sendTelegramMessage(`🔴 أوفلاين الآن. (آخر ظهور: ${timeAgo})`);
           }
         } else if (signal.type === 'report') {
-          checkWeeklyReport(true); // Assuming we can force it, wait checkWeeklyReport checks day
-          // Forcing report by changing local storage before call temporarily
+          checkWeeklyReport(true);
           const og = localStorage.getItem('mori_weekly_report_sent');
           localStorage.setItem('mori_weekly_report_sent', 'force');
           checkWeeklyReport();
@@ -126,7 +129,7 @@ export default function App() {
 
   // Global Engagement Timer (tracks if she spends a long time in the site today)
   useEffect(() => {
-    const milestones = [15, 30, 45, 60]; // minutes
+    const milestones = [15, 30, 45, 60];
     const timers = milestones.map(mins => {
       return setTimeout(() => {
         trackDeepEngagement(mins);
