@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { useTelegram } from '../context/TelegramContextCore'
 import WorldSwitcher   from '../shared/WorldSwitcher.jsx'
 import EidGreeting     from '../eid/EidGreeting.jsx'
 import EidMusicSection from '../eid/EidMusicSection.jsx'
@@ -17,7 +16,7 @@ function EidNavDots({ active, scrollTo }) {
       style={{
         position: 'fixed', right: '1.1rem', top: '50%',
         transform: 'translateY(-50%)', display: 'flex',
-        flexDirection: 'column', gap: 10,
+        flexDirection: 'column', gap: 10, zIndex: 100,
       }}
       aria-label="Eid section navigation"
     >
@@ -54,12 +53,6 @@ export default function EidPage() {
 
   const setRef = useCallback((i) => (el) => { sectionRefs.current[i] = el }, [])
 
-  const { trackSectionEntrance } = useTelegram()
-
-  useEffect(() => {
-    trackSectionEntrance("تهنئة العيد 🌙")
-  }, [trackSectionEntrance])
-
   useEffect(() => {
     const container = scrollRef.current; if (!container) return
     const observers = sectionRefs.current.map((el, i) => {
@@ -88,14 +81,17 @@ export default function EidPage() {
     >
       <div className="noise-overlay" aria-hidden="true" />
 
+      {/* World Switcher */}
+      <WorldSwitcher />
+
+      {/* Eid nav dots */}
+      <EidNavDots active={active} scrollTo={scrollTo} />
+
       <main ref={scrollRef} className="scroll-container" role="main">
         <EidGreeting     sectionRef={setRef(0)} />
         <EidMusicSection sectionRef={setRef(1)} />
         <EidMemories     sectionRef={setRef(2)} />
       </main>
-
-      {/* Eid nav dots — rendered after main to stay on top naturally */}
-      <EidNavDots active={active} scrollTo={scrollTo} />
     </motion.div>
   )
 }

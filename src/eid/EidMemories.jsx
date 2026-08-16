@@ -1,16 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createPortal } from 'react-dom'
 import Stars from '../components/Stars.jsx'
 
-// ── Cloudinary photo + video imports ───────────────────────────────────
-const photo1 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617703/photo1_if8iym.jpg'
-const photo2 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617703/photo2_qugg6j.jpg'
-const photo3 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617336/photo3_pixcje.jpg'
-const photo4 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617337/photo4_fl9v8o.jpg'
-const photo6 = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617702/photo6_dd3k8p.jpg'
-const Vid = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774617353/Vid_yotk1v.mp4'
-const MyPhoneWallpaper = 'https://res.cloudinary.com/djdktudjh/image/upload/v1774617703/MyPhoneWallpaper_iqju9j.jpg'
+// ── Real photo + video imports ───────────────────────────────────
+import photo1 from '../assets/memories/photo1.jpg'
+import photo2 from '../assets/memories/photo2.jpg'
+import photo3 from '../assets/memories/photo3.jpg'
+import photo4 from '../assets/memories/photo4.jpg'
+import photo6 from '../assets/memories/photo6.jpg'
+import Vid    from '../assets/memories/Vid.mp4'
 
 const MEMORIES = [
   { id: 1, type: 'image', src: photo1, caption: 'You felt like home' },
@@ -19,7 +17,6 @@ const MEMORIES = [
   { id: 4, type: 'image', src: photo4, caption: 'Even the trees listened… when I wrote about you_Always in my heart. 💙' },
   { id: 5, type: 'image', src: photo6, caption: 'This is how my heart looks… whenever you’re near' },
   { id: 6, type: 'video', src: Vid,    caption: 'If I could relive one feeling forever… it would be loving you_I Love U, Mori 💙' },
-  { id: 7, type: 'image', src: MyPhoneWallpaper, caption: 'انتي موجودة فى كل لحظة في يومي'},
 ]
 
 /* ═══════════════════════════════════════════════════════════════
@@ -50,7 +47,7 @@ function Lightbox({ item, idx, total, onClose, onPrev, onNext }) {
     }
   }, [item.id])
 
-  return createPortal(
+  return (
     <motion.div
       style={LB.overlay}
       initial={{ opacity: 0 }}
@@ -156,21 +153,20 @@ function Lightbox({ item, idx, total, onClose, onPrev, onNext }) {
           <polygon points="9,18 15,12 9,6"/>
         </svg>
       </motion.button>
-    </motion.div>,
-    document.body
+    </motion.div>
   )
 }
 
 const LB = {
   overlay: {
-    position: 'fixed', inset: 0,
+    position: 'fixed', inset: 0, zIndex: 2000,
     background: 'rgba(2, 6, 18, 0.95)',
     backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   arrow: {
     position: 'fixed', top: '50%', transform: 'translateY(-50%)',
-    width: 44, height: 44, borderRadius: '50%',
+    zIndex: 10, width: 44, height: 44, borderRadius: '50%',
     background: 'rgba(8,18,52,0.75)', border: '1px solid rgba(90,150,240,0.18)',
     color: 'rgba(168,200,248,0.9)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -187,7 +183,7 @@ const LB = {
     boxShadow: '0 30px 90px rgba(0,0,0,0.75), 0 0 0 0.5px rgba(90,150,240,0.07)',
   },
   close: {
-    position: 'absolute', top: 12, right: 12,
+    position: 'absolute', top: 12, right: 12, zIndex: 5,
     width: 34, height: 34, borderRadius: '50%',
     background: 'rgba(6,14,44,0.85)',
     border: '1px solid rgba(90,150,240,0.2)',
@@ -259,7 +255,7 @@ function MemCard({ item, index, onClick }) {
       initial={{ opacity: 0, y: 22, scale: 0.97 }}
       animate={vis ? { opacity: 1, y: 0, scale: 1 } : {}}
       transition={{ duration: 0.55, delay: (index % 3) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ scale: 1.034 }}
+      whileHover={{ scale: 1.034, zIndex: 2 }}
       whileTap={{ scale: 0.97 }}
       onClick={() => onClick(index)}
       className="memory-card-wrap"
@@ -404,7 +400,10 @@ export default function EidMemories({ sectionRef }) {
         whileInView={{ opacity:1, y:0 }}
         viewport={{ once:true, amount:0.12 }}
         transition={{ duration:0.82, ease:[0.22,1,0.36,1] }}
-        style={{ position: 'relative', width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.75rem' }}
+        style={{
+          position:'relative', zIndex:1, width:'100%', maxWidth:560,
+          display:'flex', flexDirection:'column', alignItems:'center', gap:'1.5rem',
+        }}
       >
         {/* Header */}
         <div style={{ textAlign:'center', width:'100%' }}>

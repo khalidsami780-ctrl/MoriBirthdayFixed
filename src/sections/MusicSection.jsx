@@ -1,19 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Stars from '../components/Stars.jsx'
-import { useTelegram } from '../context/TelegramContextCore'
 
-const sYourSong = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620429/your-song_nwu6ga.mp3'
-const sAntaElHob = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620429/anta-el-hob_pa2zwf.mp3'
-const sElliShawatoh = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620428/elli-shawatoh_uuixf5.mp3'
-const sHabibEinia = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620418/habib-einia_t0x9rm.mp3'
-const sAmaAnKan = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620424/ama-an-kan_a3lim3.mp3'
-const sOyouni = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620429/oyouni-teshtahi_aofvfd.mp3'
-const sWintaAlbi = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620419/winta-albi_nzqvj3.mp3'
-const sBoshrak = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620431/boshrak-elyoum_j55uq1.mp3'
-const sEveryTime = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620440/Every_time_I_come_to_you_hi4pom.mp3'
-const sHimAndI = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620417/Him_and_I_fpfbwf.mp3'
-const sAmerMounib = 'https://res.cloudinary.com/djdktudjh/video/upload/v1774620424/Amer_Mounib_m9rgye.mp3'
+import sYourSong     from '../music/your-song.mp3'
+import sAntaElHob    from '../music/anta-el-hob.mp3'
+import sElliShawatoh from '../music/elli-shawatoh.mp3'
+import sHabibEinia   from '../music/habib-einia.mp3'
+import sAmaAnKan     from '../music/ama-an-kan.mp3'
+import sOyouni       from '../music/oyouni-teshtahi.mp3'
+import sWintaAlbi    from '../music/winta-albi.mp3'
+import sBoshrak      from '../music/boshrak-elyoum.mp3'
+import sEveryTime    from '../music/Every time I come to you.mp3'
+import sHimAndI      from '../music/Him and I.mp3'
+import sAmerMounib   from '../music/Amer Mounib.mp3'
 
 const PLAYLIST = [
   { id:1,  title:'Your Song',                artist:'Our Melody',  arabic:'أغنيتنا',                mood:'حنين',    src:sYourSong,     color:'#5b9cf6' },
@@ -162,20 +161,8 @@ export default function MusicSection({ sectionRef }) {
   const [dur,     setDur]     = useState(0)
   const [vol,     setVol]     = useState(0.8)
   const [muted,   setMuted]   = useState(false)
-  const { trackSongPlay } = useTelegram()
 
   const song = PLAYLIST[idx]
-
-  // Tracking logic: Notify Khalid if song plays for more than 10 seconds
-  useEffect(() => {
-    let trackTimer;
-    if (playing && song) {
-      trackTimer = setTimeout(() => {
-        trackSongPlay(song.title, song.artist);
-      }, 10000); // 10 seconds threshold
-    }
-    return () => { if (trackTimer) clearTimeout(trackTimer); };
-  }, [playing, idx, song, trackSongPlay]);
 
   useEffect(() => {
     const a = audioRef.current; if (!a) return
@@ -239,7 +226,7 @@ export default function MusicSection({ sectionRef }) {
         whileInView={{ opacity:1, y:0 }}
         viewport={{ once:true, amount:0.12 }}
         transition={{ duration:0.88, ease:[0.22,1,0.36,1] }}
-        style={{ position:'relative', width:'100%', maxWidth:500, display:'flex', flexDirection:'column', alignItems:'center', gap:'1.75rem' }}
+        style={{ position:'relative', zIndex:1, width:'100%', maxWidth:500, display:'flex', flexDirection:'column', alignItems:'center', gap:'1.75rem' }}
       >
         {/* Header */}
         <div style={{ textAlign:'center', width:'100%' }}>
