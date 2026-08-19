@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   }
   const time = (value) => {
     const date = new Date(value)
-    return Number.isNaN(date.getTime()) ? 'Unknown time' : new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date)
+    return Number.isNaN(date.getTime()) ? 'Unknown time' : new Intl.DateTimeFormat('en-US', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(date)
   }
   const location = () => {
     const city = trim(req.headers['x-vercel-ip-city'], 80)
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
 
     if (event === 'session_start') text = ['🛡️ MORI WEBSITE WATCHER', '━━━━━━━━━━━━━━━━━━', '', '🟢 SESSION STARTED', '', 'Someone just opened the website.', '', `🆔 ${sessionId}`, `🕐 Started: ${time(timestamp)}`, `📄 Page: ${page}`, `🔗 Route: ${route}`, `📱 Device: ${device}`, `🌐 Browser: ${browser}`, `💻 OS: ${os}`, `📐 Screen: ${screen}`, locationLine, '', '━━━━━━━━━━━━━━━━━━', '👀 WATCHING ACTIVITY...'].filter(Boolean).join('\n')
     else if (event === 'route_change') text = ['🛡️ MORI WEBSITE WATCHER', '━━━━━━━━━━━━━━━━━━', '', '📄 PAGE CHANGE', '', `➡️ ${trim(body.previousPage || pageName(body.previousRoute), 80)}`, '      ↓', `➡️ ${trim(body.nextPage || pageName(body.nextRoute), 80)}`, '', `⏱️ Previous page: ${duration(body.previousPageDurationMs)}`, `🕐 ${time(timestamp)}`, `📱 ${device}`].join('\n')
-    else if (event === 'interaction' || event === 'special_interaction') text = ['🛡️ MORI WEBSITE WATCHER', '━━━━━━━━━━━━━━━━━━', '', event === 'special_interaction' ? '💌 SPECIAL INTERACTION' : '🖱️ INTERACTION', '', `💬 "${trim(body.label || 'Unnamed control', 120)}"`, `📄 Page: ${page}`, `🕐 ${time(timestamp)}`, `📱 ${device}`].join('\n')
+    else if (event === 'interaction' || event === 'special_interaction') text = ['🛡️ MORI WEBSITE WATCHER', '━━━━━━━━━━━━━━━━━━', '', event === 'special_interaction' ? '💌 SPECIAL INTERACTION' : '🖱️ INTERACTION', '', `💬 \"${trim(body.label || 'Unnamed control', 120)}\"`, `📄 Page: ${page}`, `🕐 ${time(timestamp)}`, `📱 ${device}`].join('\n')
     else if (event.startsWith('music_')) {
       const labels = { music_started: '🎵 MUSIC STARTED', music_resumed: '▶️ MUSIC RESUMED', music_paused: '⏸️ MUSIC PAUSED', music_finished: '🎵 MUSIC FINISHED' }
       text = ['🛡️ MORI WEBSITE WATCHER', '━━━━━━━━━━━━━━━━━━', '', labels[event], '', `🎧 ${trim(body.track || 'Current website audio', 120)}`, `📄 ${page}`, event === 'music_paused' || event === 'music_finished' ? `⏱️ Played: ${duration(body.playedMs)}` : null, `🕐 ${time(timestamp)}`, `📱 ${device}`].filter(Boolean).join('\n')
